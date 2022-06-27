@@ -46,6 +46,55 @@ BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(KnotVector const &kno
   }
 }
 
+// This creates a new basis function iff requested basis function does not exist.
+// Else raw pointer of existing basis function.
+// TODO: does it help, if a shared_ptr is returned instead of raw_ptr?
+//template<int para_dim>
+BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(
+    KnotVector const &knot_vector /* NOT shared_ptr */,
+    KnotSpan const &start_of_support,
+    Degree degree,
+    //UniqueBSplineBasisFunctions<para_dim> &unique_basis_functions,
+    UniqueBSplineBasisFunctions &unique_basis_functions,
+    Tolerance const &tolerance) {
+
+    // proof of concept. better ideas are encouraged
+
+    // make a unique identifier str
+    // kv
+  const void * kv_address = static_cast<const void*>(&knot_vector);
+  std::stringstream kv_ss;
+  kv_ss << kv_address;
+
+    /*
+    const std::string kv_name = ss.str();
+    // start of support
+    const std::string sos_name = std::to_string(start_of_support.Get());
+    // degree
+    const std::string d_name = std::to_string(degree.Get());
+    */
+
+  const std::string basis_identifier =
+      kv_ss.str() + "_"
+      + std::to_string(start_of_support.Get()) + "_"
+      + std::to_string(degree.Get());
+
+  // And does this exist?
+  const auto& existing_basis_function =
+      unique_basis_functions.find(basis_identifier);
+
+  if (existing_basis_function != unique_basis_functions.end()) {
+    // jackpot
+    return existing_basis_function->second;
+  } else {
+    // does not exist. create - store - return
+    auto new_basis = CreateDynamic(knot_vector, start_of_support, degree, tolerance);
+    unique_basis_functions[basis_identifier] = new_basis;
+    return new_basis;
+  }
+
+}
+
 BSplineBasisFunction::BSplineBasisFunction(KnotVector const &knot_vector, KnotSpan const &start_of_support,
                                            Degree degree, Tolerance const &tolerance) : degree_(move(degree)) {
   Index const start{start_of_support.Get()};

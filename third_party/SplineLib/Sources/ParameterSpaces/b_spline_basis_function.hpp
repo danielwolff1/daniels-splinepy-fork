@@ -19,8 +19,21 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include "Sources/ParameterSpaces/knot_vector.hpp"
 #include "Sources/Utilities/named_type.hpp"
 #include "Sources/Utilities/std_container_operations.hpp"
+#include "Sources/Utilities/string_operations.hpp" // for String alias.
 
 namespace splinelib::sources::parameter_spaces {
+
+class BSplineBasisFunction;
+// proof of concept
+// unorderd_map key syntax
+// <knot_vector_adress>_<start_of_support>_<degree>
+//template<int parametric_dimensionality>
+using UniqueBSplineBasisFunctions =
+    UnorderedMap<String, BSplineBasisFunction*>;
+    //Array<
+    //    UnorderedMap<String, SharedPointer<BSplineBasisFunction>>,
+    //    parametric_dimensionality
+    //>;
 
 // BSplineBasisFunctions N_{i,p} are non-negative, piecewise polynomial functions of degree p forming a basis of the
 // vector space of all piecewise polynomial functions of degree p corresponding to some knot vector.  The B-spline basis
@@ -39,8 +52,20 @@ class BSplineBasisFunction {
  public:
   using Type_ = ParametricCoordinate::Type_;
 
-  static BSplineBasisFunction * CreateDynamic(KnotVector const &knot_vector, KnotSpan const &start_of_support,
-      Degree degree, Tolerance const &tolerance = kEpsilon);
+  static BSplineBasisFunction * CreateDynamic(
+      KnotVector const &knot_vector,
+      KnotSpan const &start_of_support,
+      Degree degree,
+      Tolerance const &tolerance = kEpsilon);
+
+  //template<int para_dim>
+  static BSplineBasisFunction * CreateDynamic(
+      KnotVector const &knot_vector,
+      KnotSpan const &start_of_support,
+      Degree degree,
+      //UniqueBSplineBasisFunctions<para_dim> &unique_basis_functions,
+      UniqueBSplineBasisFunctions &unique_basis_functions,
+      Tolerance const &tolerance = kEpsilon);
 
   virtual ~BSplineBasisFunction() = default;
 
