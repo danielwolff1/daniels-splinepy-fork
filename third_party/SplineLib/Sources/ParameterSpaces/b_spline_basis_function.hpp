@@ -29,7 +29,7 @@ class BSplineBasisFunction;
 // <knot_vector_adress>_<start_of_support>_<degree>
 //template<int parametric_dimensionality>
 using UniqueBSplineBasisFunctions =
-    UnorderedMap<String, BSplineBasisFunction*>;
+    UnorderedMap<String, SharedPointer<BSplineBasisFunction>>;
     //Array<
     //    UnorderedMap<String, SharedPointer<BSplineBasisFunction>>,
     //    parametric_dimensionality
@@ -59,7 +59,7 @@ class BSplineBasisFunction {
       Tolerance const &tolerance = kEpsilon);
 
   //template<int para_dim>
-  static BSplineBasisFunction * CreateDynamic(
+  static SharedPointer<BSplineBasisFunction> CreateDynamic(
       KnotVector const &knot_vector,
       KnotSpan const &start_of_support,
       Degree degree,

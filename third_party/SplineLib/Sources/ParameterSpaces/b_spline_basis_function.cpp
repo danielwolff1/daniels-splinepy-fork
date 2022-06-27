@@ -16,6 +16,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include "Sources/ParameterSpaces/b_spline_basis_function.hpp"
 
 #include <utility>
+#include <iostream>
+
 
 #include "Sources/ParameterSpaces/knot_vector.hpp"
 #include "Sources/ParameterSpaces/non_zero_degree_b_spline_basis_function.hpp"
@@ -48,9 +50,9 @@ BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(KnotVector const &kno
 
 // This creates a new basis function iff requested basis function does not exist.
 // Else raw pointer of existing basis function.
-// TODO: does it help, if a shared_ptr is returned instead of raw_ptr?
 //template<int para_dim>
-BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(
+//BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(
+SharedPointer<BSplineBasisFunction> BSplineBasisFunction::CreateDynamic(
     KnotVector const &knot_vector /* NOT shared_ptr */,
     KnotSpan const &start_of_support,
     Degree degree,
@@ -79,19 +81,39 @@ BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(
       + std::to_string(start_of_support.Get()) + "_"
       + std::to_string(degree.Get());
 
+  std::cout << basis_identifier << "\n";
+
   // And does this exist?
   const auto& existing_basis_function =
       unique_basis_functions.find(basis_identifier);
 
   if (existing_basis_function != unique_basis_functions.end()) {
     // jackpot
+    std::cout << "jackpot\n";
     return existing_basis_function->second;
   } else {
     // does not exist. create - store - return
-    auto new_basis = CreateDynamic(knot_vector, start_of_support, degree, tolerance);
-    unique_basis_functions[basis_identifier] = new_basis;
-    return new_basis;
+    std::cout << "create_new\n";
+    if (degree == Degree{}) {
+      auto new_basis = SharedPointer<ZeroDegreeBSplineBasisFunction>(new ZeroDegreeBSplineBasisFunction(
+                knot_vector,
+                start_of_support,
+                tolerance));
+      unique_basis_functions[basis_identifier] = new_basis;
+
+      return new_basis;
+    } else {
+      auto new_basis = SharedPointer<NonZeroDegreeBSplineBasisFunction>(new NonZeroDegreeBSplineBasisFunction(
+                knot_vector,
+                start_of_support,
+                move(degree),
+                unique_basis_functions,
+                tolerance));
+      unique_basis_functions[basis_identifier] = new_basis;
+      return new_basis;
+    }
   }
+
 
 }
 
