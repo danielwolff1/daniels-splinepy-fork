@@ -147,6 +147,7 @@ class ParameterSpace {
   KnotVectors_ knot_vectors_;
   Degrees_ degrees_;
   BSplineBasisFunctions_ basis_functions_;
+  UniqueBSplineBasisFunctions unique_basis_functions_;
 
  private:
   using MultiplicityType_ = Multiplicity::Type_;
