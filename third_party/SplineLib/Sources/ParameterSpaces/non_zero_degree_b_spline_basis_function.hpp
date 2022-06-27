@@ -40,8 +40,17 @@ class NonZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
   using Type_ = Base_::Type_;
 
   NonZeroDegreeBSplineBasisFunction() = default;
-  NonZeroDegreeBSplineBasisFunction(KnotVector const &knot_vector, KnotSpan const &start_of_support, Degree degree,
-                                    Tolerance const &tolerance = kEpsilon);
+  NonZeroDegreeBSplineBasisFunction(
+      KnotVector const &knot_vector,
+      KnotSpan const &start_of_support,
+      Degree degree,
+      Tolerance const &tolerance = kEpsilon);
+  NonZeroDegreeBSplineBasisFunction(
+      KnotVector const &knot_vector,
+      KnotSpan const &start_of_support,
+      Degree degree,
+      UniqueBSplineBasisFunctions &unique_basis_functions,
+      Tolerance const &tolerance = kEpsilon);
   NonZeroDegreeBSplineBasisFunction(NonZeroDegreeBSplineBasisFunction const &other) = default;
   NonZeroDegreeBSplineBasisFunction(NonZeroDegreeBSplineBasisFunction &&other) noexcept = default;
   NonZeroDegreeBSplineBasisFunction & operator=(NonZeroDegreeBSplineBasisFunction const &rhs) = default;
