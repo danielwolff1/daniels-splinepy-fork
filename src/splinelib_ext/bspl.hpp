@@ -92,6 +92,9 @@ public:
 
     ParameterSpace_ const &parameter_space = *Base_::Base_::parameter_space_;
 
+    // prepare map to hold unique evaluation values.
+    typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+
     int i = 0;
     for (Index_ non_zero_basis_function{parameter_space.First()};
          non_zero_basis_function != parameter_space.Behind();
@@ -105,12 +108,13 @@ public:
 
       const auto evaluated = parameter_space.EvaluateBasisFunction(
           basis_function,
-          parametric_coordinate
+          parametric_coordinate,
+          unique_evaluations
       );
 
       basis_function_values[i] = evaluated;
       support_control_point_ids[i] = basis_function.GetIndex1d().Get();
-      i++;
+      ++i;
     }
   }
 

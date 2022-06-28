@@ -99,6 +99,9 @@ public:
 
     ParameterSpace_ const &parameter_space = *Base_::Base_::parameter_space_;
 
+    // prepare map to hold unique evaluation values.
+    typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+
     int i = 0;
     double W = 0.0;
     for (Index_ non_zero_basis_function{parameter_space.First()};
@@ -114,7 +117,8 @@ public:
       // general basis fn
       const auto evaluated = parameter_space.EvaluateBasisFunction(
           basis_function,
-          parametric_coordinate
+          parametric_coordinate,
+          unique_evaluations
       );
 
       // get `w` and add to `W`
