@@ -100,6 +100,47 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
 
 template<int parametric_dimensionality, int dimensionality>
 typename Spline<parametric_dimensionality, dimensionality>::Coordinate_
+BSpline<parametric_dimensionality, dimensionality>::operator()(
+    ParametricCoordinate_ const &parametric_coordinate,
+    Derivative_ const &derivative,
+    Tolerance const &tolerance) const {
+#ifndef NDEBUG
+  try {
+    utilities::numeric_operations::ThrowIfToleranceIsNegative(tolerance);
+  } catch (InvalidArgument const &exception) { Throw(exception, "splinelib::sources::splines::BSpline::operator()"); }
+#endif
+  ParameterSpace_ const &parameter_space = *Base_::parameter_space_;
+  Coordinate_ evaluated_b_spline_derivative{};
+
+  // prepare map to hold unique evaluation values.
+  typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+
+  for (Index_ non_zero_basis_function{parameter_space.First()};
+       non_zero_basis_function != parameter_space.Behind();
+       ++non_zero_basis_function) {
+    Index_ const &basis_function = 
+        parameter_space.FindFirstNonZeroBasisFunction(parametric_coordinate)
+        + non_zero_basis_function.GetIndex();
+
+    utilities::std_container_operations::AddAndAssignToFirst(
+        evaluated_b_spline_derivative,
+        utilities::std_container_operations::Multiply(
+            ((*vector_space_))[basis_function.GetIndex1d()],
+            parameter_space.EvaluateBasisFunctionDerivative(
+                basis_function,
+                parametric_coordinate,
+                derivative,
+                unique_evaluations
+            )
+        )
+    );
+  }
+
+  return evaluated_b_spline_derivative;
+}
+
+template<int parametric_dimensionality, int dimensionality>
+typename Spline<parametric_dimensionality, dimensionality>::Coordinate_
 BSpline<parametric_dimensionality, dimensionality>::EvaluateWithoutMemoization(
     ParametricCoordinate_ const &parametric_coordinate,
     Tolerance const &tolerance) const {
@@ -123,7 +164,9 @@ BSpline<parametric_dimensionality, dimensionality>::EvaluateWithoutMemoization(
 
 template<int parametric_dimensionality, int dimensionality>
 typename Spline<parametric_dimensionality, dimensionality>::Coordinate_
-BSpline<parametric_dimensionality, dimensionality>::operator()(ParametricCoordinate_ const &parametric_coordinate,
+BSpline<parametric_dimensionality,
+        dimensionality>::DerivativeWithoutMemoization(
+    ParametricCoordinate_ const &parametric_coordinate,
     Derivative_ const &derivative, Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {

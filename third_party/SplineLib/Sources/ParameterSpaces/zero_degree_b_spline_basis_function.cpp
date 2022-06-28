@@ -73,7 +73,8 @@ ZeroDegreeBSplineBasisFunction::operator()(
   std::stringstream bf_ss, pc_ss;
   bf_ss << bf_address;
   pc_ss << pc_address;
-  const String search_key = bf_ss.str() + pc_ss.str();
+  // add "_0" to have conforming naming scheme as Derivative 
+  const String search_key = bf_ss.str() + pc_ss.str() + "_0";
 
   const auto& existing_evaluation =
       unique_evaluations.find(search_key);
@@ -102,6 +103,51 @@ ZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametri
   }
 #endif
   return (derivative == Derivative{} ? operator()(parametric_coordinate, tolerance) : Type_{});
+}
+
+ZeroDegreeBSplineBasisFunction::Type_
+ZeroDegreeBSplineBasisFunction::operator()(
+    ParametricCoordinate const &parametric_coordinate,
+    Derivative const &derivative,
+    UniqueEvaluations& unique_evaluations,
+    Tolerance const &tolerance) const {
+#ifndef NDEBUG
+  try {
+    utilities::numeric_operations::ThrowIfToleranceIsNegative(tolerance);
+  } catch (InvalidArgument const &exception) {
+    Throw(exception, "splinelib::sources::parameter_spaces::ZeroDegreeBSplineBasisFunction::operator()");
+  }
+#endif
+  // search key preparation
+  // -> prepare string of memory addresses and derivative value
+  const void* bf_address = static_cast<const void*>(this);
+  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
+  std::stringstream bf_ss, pc_ss;
+  bf_ss << bf_address;
+  pc_ss << pc_address;
+  const String search_key =
+      bf_ss.str()
+      + pc_ss.str()
+      + "_"
+      + std::to_string(derivative.Get());
+
+  // see if there's value
+  const auto& existing_evaluation =
+      unique_evaluations.find(search_key);
+
+  if (existing_evaluation != unique_evaluations.end()) {
+    // jackpot
+    return existing_evaluation->second;
+
+  } else {
+    // compute - store - return
+    const auto new_value  = (derivative == Derivative{} ? (
+        operator()(parametric_coordinate, tolerance)
+    ) : Type_{});
+    unique_evaluations[search_key] = new_value;
+
+    return new_value;
+  }
 }
 
 }  // namespace splinelib::sources::parameter_spaces

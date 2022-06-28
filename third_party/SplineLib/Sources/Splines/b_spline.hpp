@@ -83,6 +83,11 @@ class BSpline : public Spline<parametric_dimensionality, dimensionality> {
   Coordinate_ EvaluateWithoutMemoization(
       ParametricCoordinate_ const &parametric_coordinate,
       Tolerance const &tolerance = kEpsilon) const;
+  Coordinate_ DerivativeWithoutMemoization(
+      ParametricCoordinate_ const &parametric_coordinate,
+      Derivative_ const &derivative,
+      Tolerance const &tolerance = kEpsilon) const;
+
 
   void InsertKnot(Dimension const &dimension, Knot_ knot, Multiplicity const &multiplicity = kMultiplicity,
                   Tolerance const &tolerance = kEpsilon) const override;

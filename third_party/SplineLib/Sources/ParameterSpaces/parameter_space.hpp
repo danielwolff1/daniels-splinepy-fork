@@ -133,8 +133,16 @@ class ParameterSpace {
       ParametricCoordinate_ const &parametric_coordinate,
       UniqueEvaluations_& unique_evaluations,
       Tolerance const &tolerance = kEpsilon) const;
-  virtual Type_ EvaluateBasisFunctionDerivative(Index_ const &basis_function_index,
-      ParametricCoordinate_ const &parametric_coordinate, Derivative_ const &derivative,
+  virtual Type_ EvaluateBasisFunctionDerivative(
+      Index_ const &basis_function_index,
+      ParametricCoordinate_ const &parametric_coordinate,
+      Derivative_ const &derivative,
+      Tolerance const &tolerance = kEpsilon) const;
+  virtual Type_ EvaluateBasisFunctionDerivative(
+      Index_ const &basis_function_index,
+      ParametricCoordinate_ const &parametric_coordinate,
+      Derivative_ const &derivative,
+      UniqueEvaluations_& unique_evaluations,
       Tolerance const &tolerance = kEpsilon) const;
 
   virtual InsertionInformation_ InsertKnot(Dimension const &dimension, Knot_ knot,

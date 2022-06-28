@@ -37,11 +37,7 @@ template <int parametric_dimensionality>
 using UniqueBSplineBasisFunctionsArray =
     Array<UniqueBSplineBasisFunctions, parametric_dimensionality>;
 
-using UniqueEvaluations =
-    UnorderedMap<
-      String,
-      ParametricCoordinate::Type_
-    >;
+using UniqueEvaluations = UnorderedMap<String, ParametricCoordinate::Type_>;
 
 template <int parametric_dimensionality>
 using UniqueEvaluationsArray =
@@ -88,7 +84,12 @@ class BSplineBasisFunction {
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            UniqueEvaluations& unique_evaluations,
                            Tolerance const &tolerance = kEpsilon) const = 0;
-  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate, Derivative const &derivative,
+  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                           Derivative const &derivative,
+                           Tolerance const &tolerance = kEpsilon) const = 0;
+  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                           Derivative const &derivative,
+                           UniqueEvaluations& unique_evaluations,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 
  protected:

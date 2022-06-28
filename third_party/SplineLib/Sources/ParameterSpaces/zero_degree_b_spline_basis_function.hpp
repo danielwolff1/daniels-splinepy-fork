@@ -59,6 +59,10 @@ class ZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
   Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                    Derivative const &derivative,
                    Tolerance const &tolerance = kEpsilon) const override;
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   Derivative const &derivative,
+                   UniqueEvaluations& unique_evaluations,
+                   Tolerance const &tolerance = kEpsilon) const override;
 };
 
 bool IsEqual(ZeroDegreeBSplineBasisFunction const &lhs, ZeroDegreeBSplineBasisFunction const &rhs,

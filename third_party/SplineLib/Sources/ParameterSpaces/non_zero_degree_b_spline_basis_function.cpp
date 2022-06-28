@@ -136,7 +136,8 @@ NonZeroDegreeBSplineBasisFunction::operator()(
   std::stringstream bf_ss, pc_ss;
   bf_ss << bf_address;
   pc_ss << pc_address;
-  const String search_key = bf_ss.str() + pc_ss.str();
+  // add "_0" to have conforming naming scheme as Derivative
+  const String search_key = bf_ss.str() + pc_ss.str() + "_0";
 
   // see if there's value
   const auto& existing_evaluation =
@@ -154,8 +155,7 @@ NonZeroDegreeBSplineBasisFunction::operator()(
           * (*left_lower_degree_basis_function_)(parametric_coordinate,
                                                  unique_evaluations,
                                                  tolerance))
-         + ((end_knot_
-             - parametric_coordinate).Get()
+         + ((end_knot_ - parametric_coordinate).Get()
              * right_denominator_inverse_
              * (*right_lower_degree_basis_function_)(parametric_coordinate,
                                                      unique_evaluations,
@@ -193,6 +193,77 @@ NonZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parame
     return operator()(parametric_coordinate, tolerance);
   }
 }
+
+NonZeroDegreeBSplineBasisFunction::Type_
+NonZeroDegreeBSplineBasisFunction::operator()(
+    ParametricCoordinate const &parametric_coordinate,
+    Derivative const &derivative,
+    UniqueEvaluations& unique_evaluations,
+    Tolerance const &tolerance) const {
+#ifndef NDEBUG
+  try {
+    utilities::numeric_operations::ThrowIfToleranceIsNegative(tolerance);
+  } catch (InvalidArgument const &exception) {
+    Throw(exception, "splinelib::sources::parameter_spaces::NonZeroDegreeBSplineBasisFunction::operator()");
+  }
+#endif
+  // search key preparation
+  // -> prepare string of memory addresses and derivative value
+  const void* bf_address = static_cast<const void*>(this);
+  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
+  std::stringstream bf_ss, pc_ss;
+  bf_ss << bf_address;
+  pc_ss << pc_address;
+  const String search_key =
+      bf_ss.str()
+      + pc_ss.str()
+      + "_"
+      + std::to_string(derivative.Get());
+
+  // see if there's value
+  const auto& existing_evaluation =
+      unique_evaluations.find(search_key);
+
+  if (existing_evaluation != unique_evaluations.end()) {
+    // jackpot
+    std::cout << "DERjackpot\n";
+    return existing_evaluation->second;
+
+  } else {
+    // compute
+    if (derivative != Derivative{}) {
+      if (IsInSupport(parametric_coordinate, tolerance)) {
+        Derivative const lower_derivative = (derivative - Derivative{1});
+        // unordered_map::operator[] returns ref.
+        // compute and store
+        unique_evaluations[search_key] = 
+            (left_quotient_derivative_
+             * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                                    lower_derivative,
+                                                    unique_evaluations,
+                                                    tolerance))
+            - (right_quotient_derivative_
+               * (*right_lower_degree_basis_function_)(
+                       parametric_coordinate,
+                       lower_derivative,
+                       unique_evaluations,
+                       tolerance
+                 ));
+
+      } else {
+        unique_evaluations[search_key] = Type_{};
+      }
+    } else {
+      unique_evaluations[search_key] = operator()(parametric_coordinate,
+                                                  unique_evaluations,
+                                                  tolerance);
+    }
+  }
+
+  // TODO: hope it doesn't search again with optimization
+  return unique_evaluations[search_key];
+}
+
 
 NonZeroDegreeBSplineBasisFunction::Type_
 NonZeroDegreeBSplineBasisFunction::InvertPotentialZero(ParametricCoordinate const &potential_zero,
