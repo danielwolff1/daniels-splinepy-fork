@@ -57,6 +57,41 @@ ZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametri
 }
 
 ZeroDegreeBSplineBasisFunction::Type_
+ZeroDegreeBSplineBasisFunction::operator()(
+    ParametricCoordinate const &parametric_coordinate,
+    UniqueEvaluations& unique_evaluations,
+    Tolerance const &tolerance) const {
+
+
+  // Maybe this one below is good enough, 
+  /* return operator()(parametric_coordinate, tolerance); */
+  // But, here it is.
+
+  // prepare string of memory addresses
+  const void* bf_address = static_cast<const void*>(this);
+  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
+  std::stringstream bf_ss, pc_ss;
+  bf_ss << bf_address;
+  pc_ss << pc_address;
+  const String search_key = bf_ss.str() + pc_ss.str();
+
+  const auto& existing_evaluation =
+      unique_evaluations.find(search_key);
+
+  if (existing_evaluation != unique_evaluations.end()) {
+    // jackpot
+    return existing_evaluation->second;
+  } else {
+    // create - store - return
+    const auto new_value = operator()(parametric_coordinate, tolerance);
+    unique_evaluations[search_key] = new_value;
+
+    return new_value;
+  }
+
+}
+
+ZeroDegreeBSplineBasisFunction::Type_
 ZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametric_coordinate,
                                            Derivative const &derivative, Tolerance const &tolerance) const {
 #ifndef NDEBUG

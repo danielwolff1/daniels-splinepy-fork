@@ -51,9 +51,13 @@ class ZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
   // Comparison based on numeric_operations::GetEpsilon<Tolerance>().
   friend bool operator==(ZeroDegreeBSplineBasisFunction const &lhs, ZeroDegreeBSplineBasisFunction const &rhs);
 
-  Type_ operator()(ParametricCoordinate const &parametric_coordinate, Tolerance const &tolerance = kEpsilon) const
-      override;
-  Type_ operator()(ParametricCoordinate const &parametric_coordinate, Derivative const &derivative,
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   Tolerance const &tolerance = kEpsilon) const override;
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   UniqueEvaluations& unique_evaluations,
+                   Tolerance const &tolerance = kEpsilon) const override;
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   Derivative const &derivative,
                    Tolerance const &tolerance = kEpsilon) const override;
 };
 

@@ -51,34 +51,51 @@ class NonZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
       Degree degree,
       UniqueBSplineBasisFunctions &unique_basis_functions,
       Tolerance const &tolerance = kEpsilon);
-  NonZeroDegreeBSplineBasisFunction(NonZeroDegreeBSplineBasisFunction const &other) = default;
-  NonZeroDegreeBSplineBasisFunction(NonZeroDegreeBSplineBasisFunction &&other) noexcept = default;
-  NonZeroDegreeBSplineBasisFunction & operator=(NonZeroDegreeBSplineBasisFunction const &rhs) = default;
-  NonZeroDegreeBSplineBasisFunction & operator=(NonZeroDegreeBSplineBasisFunction &&rhs) noexcept = default;
+  NonZeroDegreeBSplineBasisFunction(
+      NonZeroDegreeBSplineBasisFunction const &other) = default;
+  NonZeroDegreeBSplineBasisFunction(
+      NonZeroDegreeBSplineBasisFunction &&other) noexcept = default;
+  NonZeroDegreeBSplineBasisFunction & operator=(
+      NonZeroDegreeBSplineBasisFunction const &rhs) = default;
+  NonZeroDegreeBSplineBasisFunction & operator=(
+      NonZeroDegreeBSplineBasisFunction &&rhs) noexcept = default;
   ~NonZeroDegreeBSplineBasisFunction() override = default;
 
   // Comparison based on tolerance.
-  friend bool IsEqual(NonZeroDegreeBSplineBasisFunction const &lhs, NonZeroDegreeBSplineBasisFunction const &rhs,
+  friend bool IsEqual(NonZeroDegreeBSplineBasisFunction const &lhs,
+                      NonZeroDegreeBSplineBasisFunction const &rhs,
                       Tolerance const &tolerance);
   // Comparison based on numeric_operations::GetEpsilon<Tolerance>().
-  friend bool operator==(NonZeroDegreeBSplineBasisFunction const &lhs, NonZeroDegreeBSplineBasisFunction const &rhs);
-  Type_ operator()(ParametricCoordinate const &parametric_coordinate, Tolerance const &tolerance = kEpsilon) const
-      override;
-  Type_ operator()(ParametricCoordinate const &parametric_coordinate, Derivative const &derivative,
+  friend bool operator==(NonZeroDegreeBSplineBasisFunction const &lhs,
+                         NonZeroDegreeBSplineBasisFunction const &rhs);
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   Tolerance const &tolerance = kEpsilon) const override;
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   UniqueEvaluations& unique_evaluations,
+                   Tolerance const &tolerance = kEpsilon) const override;
+  Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                   Derivative const &derivative,
                    Tolerance const &tolerance = kEpsilon) const override;
 
  protected:
-  Type_ left_denominator_inverse_, right_denominator_inverse_, left_quotient_derivative_, right_quotient_derivative_;
+  Type_ left_denominator_inverse_,
+        right_denominator_inverse_,
+        left_quotient_derivative_,
+        right_quotient_derivative_;
   // Shared instead of unique pointers as BSplineBasisFunctions cannot be modified after their construction.
-  SharedPointer<Base_> left_lower_degree_basis_function_, right_lower_degree_basis_function_;
+  SharedPointer<Base_> left_lower_degree_basis_function_,
+                       right_lower_degree_basis_function_;
 
  private:
-  Type_ InvertPotentialZero(ParametricCoordinate const &potential_zero, Tolerance const &tolerance) const;  // 1/0 := 0.
+  Type_ InvertPotentialZero(ParametricCoordinate const &potential_zero,
+                            Tolerance const &tolerance) const;  // 1/0 := 0.
 };
 
-bool IsEqual(NonZeroDegreeBSplineBasisFunction const &lhs, NonZeroDegreeBSplineBasisFunction const &rhs,
+bool IsEqual(NonZeroDegreeBSplineBasisFunction const &lhs,
+             NonZeroDegreeBSplineBasisFunction const &rhs,
              Tolerance const &tolerance = kEpsilon);
-bool operator==(NonZeroDegreeBSplineBasisFunction const &lhs, NonZeroDegreeBSplineBasisFunction const &rhs);
+bool operator==(NonZeroDegreeBSplineBasisFunction const &lhs,
+                NonZeroDegreeBSplineBasisFunction const &rhs);
 
 }  // namespace splinelib::sources::parameter_spaces
 

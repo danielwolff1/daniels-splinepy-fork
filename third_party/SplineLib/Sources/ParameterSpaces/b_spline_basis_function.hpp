@@ -16,6 +16,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #ifndef SOURCES_PARAMETERSPACES_B_SPLINE_BASIS_FUNCTION_HPP_
 #define SOURCES_PARAMETERSPACES_B_SPLINE_BASIS_FUNCTION_HPP_
 
+#include <iostream>
+
 #include "Sources/ParameterSpaces/knot_vector.hpp"
 #include "Sources/Utilities/named_type.hpp"
 #include "Sources/Utilities/std_container_operations.hpp"
@@ -34,6 +36,16 @@ using UniqueBSplineBasisFunctions =
 template <int parametric_dimensionality>
 using UniqueBSplineBasisFunctionsArray =
     Array<UniqueBSplineBasisFunctions, parametric_dimensionality>;
+
+using UniqueEvaluations =
+    UnorderedMap<
+      String,
+      ParametricCoordinate::Type_
+    >;
+
+template <int parametric_dimensionality>
+using UniqueEvaluationsArray =
+    Array<UniqueEvaluations, parametric_dimensionality>;
 
 // BSplineBasisFunctions N_{i,p} are non-negative, piecewise polynomial functions of degree p forming a basis of the
 // vector space of all piecewise polynomial functions of degree p corresponding to some knot vector.  The B-spline basis
@@ -71,8 +83,11 @@ class BSplineBasisFunction {
   friend bool IsEqual(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs, Tolerance const &tolerance);
   // Comparison based on numeric_operations::GetEpsilon<Tolerance>().
   friend bool operator==(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs);
-  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate, Tolerance const &tolerance = kEpsilon)
-      const = 0;
+  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                           Tolerance const &tolerance = kEpsilon) const = 0;
+  virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
+                           UniqueEvaluations& unique_evaluations,
+                           Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate, Derivative const &derivative,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 

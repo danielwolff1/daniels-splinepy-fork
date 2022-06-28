@@ -62,9 +62,14 @@ NonZeroDegreeBSplineBasisFunction::NonZeroDegreeBSplineBasisFunction(
 {
     Index const start_index{start_of_support.Get()};
     Degree::Type_ const &degree_value = degree_.Get();
-    left_denominator_inverse_ = InvertPotentialZero(knot_vector[start_index + Index{degree_value}] - start_knot_,
-                                                    tolerance);
-    right_denominator_inverse_ = InvertPotentialZero(end_knot_ - knot_vector[start_index + Index{1}], tolerance);
+    left_denominator_inverse_ = InvertPotentialZero(
+        knot_vector[start_index + Index{degree_value}] - start_knot_,
+        tolerance
+    );
+    right_denominator_inverse_ = InvertPotentialZero(
+        end_knot_ - knot_vector[start_index + Index{1}],
+        tolerance
+    );
     left_quotient_derivative_ = (degree_value * left_denominator_inverse_);
     right_quotient_derivative_ = (degree_value * right_denominator_inverse_);
 }
@@ -96,8 +101,9 @@ bool operator==(NonZeroDegreeBSplineBasisFunction const &lhs, NonZeroDegreeBSpli
 
 // Recurrence formula due to DeBoor, Cox, and Mansfield (see NURBS book Eq. (2.5)).
 NonZeroDegreeBSplineBasisFunction::Type_
-NonZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametric_coordinate,
-                                              Tolerance const &tolerance) const {
+NonZeroDegreeBSplineBasisFunction::operator()(
+    ParametricCoordinate const &parametric_coordinate,
+    Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
     utilities::numeric_operations::ThrowIfToleranceIsNegative(tolerance);
@@ -105,10 +111,62 @@ NonZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parame
     Throw(exception, "splinelib::sources::parameter_spaces::NonZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
-  return IsInSupport(parametric_coordinate, tolerance) ? (((parametric_coordinate - start_knot_).Get() *
-      left_denominator_inverse_ * (*left_lower_degree_basis_function_)(parametric_coordinate, tolerance)) +
-          ((end_knot_ - parametric_coordinate).Get() * right_denominator_inverse_ *
-           (*right_lower_degree_basis_function_)(parametric_coordinate, tolerance))) : Type_{};
+  return IsInSupport(parametric_coordinate, tolerance) ? (
+      ((parametric_coordinate - start_knot_).Get()
+        * left_denominator_inverse_
+        * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                               tolerance))
+       + ((end_knot_
+           - parametric_coordinate).Get()
+           * right_denominator_inverse_
+           * (*right_lower_degree_basis_function_)(parametric_coordinate,
+                                                   tolerance))
+  ) : Type_{};
+}
+
+NonZeroDegreeBSplineBasisFunction::Type_
+NonZeroDegreeBSplineBasisFunction::operator()(
+    ParametricCoordinate const &parametric_coordinate,
+    UniqueEvaluations& unique_evaluations,
+    Tolerance const &tolerance) const {
+
+  // prepare string of memory addresses
+  const void* bf_address = static_cast<const void*>(this);
+  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
+  std::stringstream bf_ss, pc_ss;
+  bf_ss << bf_address;
+  pc_ss << pc_address;
+  const String search_key = bf_ss.str() + pc_ss.str();
+
+  // see if there's value
+  const auto& existing_evaluation =
+      unique_evaluations.find(search_key);
+
+  if (existing_evaluation != unique_evaluations.end()) {
+    // jackpot
+    return existing_evaluation->second;
+
+  } else {
+    // compute
+    const auto new_value = IsInSupport(parametric_coordinate, tolerance) ? (
+        ((parametric_coordinate - start_knot_).Get()
+          * left_denominator_inverse_
+          * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                                 unique_evaluations,
+                                                 tolerance))
+         + ((end_knot_
+             - parametric_coordinate).Get()
+             * right_denominator_inverse_
+             * (*right_lower_degree_basis_function_)(parametric_coordinate,
+                                                     unique_evaluations,
+                                                     tolerance))
+    ) : Type_{};
+    // store
+    unique_evaluations[search_key] = new_value;
+
+    return new_value;
+  }
+
 }
 
 // Based on recurrence formula due to DeBoor, Cox, and Mansfield (see NURBS book Eq. (2.9)).

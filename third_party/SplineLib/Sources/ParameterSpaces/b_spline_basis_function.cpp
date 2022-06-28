@@ -16,7 +16,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include "Sources/ParameterSpaces/b_spline_basis_function.hpp"
 
 #include <utility>
-#include <iostream>
 
 
 #include "Sources/ParameterSpaces/knot_vector.hpp"
