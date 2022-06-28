@@ -69,6 +69,10 @@ class ParameterSpace {
 
  protected:
   using BSplineBasisFunctions_ = BSplineBasisFunctions<parametric_dimensionality>;
+  // Not to be confused with parameter_spaces::UniqueBSplineBasisFunctions
+  // Named this way just to be consistent with `BSplineBasisFunctions_`.
+  using UniqueBSplineBasisFunctions_ =
+      UniqueBSplineBasisFunctionsArray<parametric_dimensionality>;
 
  public:
   using BinomialRatios_ = Vector<BinomialRatio>;
@@ -147,7 +151,7 @@ class ParameterSpace {
   KnotVectors_ knot_vectors_;
   Degrees_ degrees_;
   BSplineBasisFunctions_ basis_functions_;
-  UniqueBSplineBasisFunctions unique_basis_functions_;
+  UniqueBSplineBasisFunctions_ unique_basis_functions_;
 
  private:
   using MultiplicityType_ = Multiplicity::Type_;

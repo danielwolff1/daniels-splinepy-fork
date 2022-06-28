@@ -24,16 +24,16 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 namespace splinelib::sources::parameter_spaces {
 
 class BSplineBasisFunction;
+
 // proof of concept
 // unorderd_map key syntax
-// <knot_vector_adress>_<start_of_support>_<degree>
-//template<int parametric_dimensionality>
+// <start_of_support>_<degree>
 using UniqueBSplineBasisFunctions =
     UnorderedMap<String, SharedPointer<BSplineBasisFunction>>;
-    //Array<
-    //    UnorderedMap<String, SharedPointer<BSplineBasisFunction>>,
-    //    parametric_dimensionality
-    //>;
+
+template <int parametric_dimensionality>
+using UniqueBSplineBasisFunctionsArray =
+    Array<UniqueBSplineBasisFunctions, parametric_dimensionality>;
 
 // BSplineBasisFunctions N_{i,p} are non-negative, piecewise polynomial functions of degree p forming a basis of the
 // vector space of all piecewise polynomial functions of degree p corresponding to some knot vector.  The B-spline basis
@@ -58,12 +58,10 @@ class BSplineBasisFunction {
       Degree degree,
       Tolerance const &tolerance = kEpsilon);
 
-  //template<int para_dim>
   static SharedPointer<BSplineBasisFunction> CreateDynamic(
       KnotVector const &knot_vector,
       KnotSpan const &start_of_support,
       Degree degree,
-      //UniqueBSplineBasisFunctions<para_dim> &unique_basis_functions,
       UniqueBSplineBasisFunctions &unique_basis_functions,
       Tolerance const &tolerance = kEpsilon);
 

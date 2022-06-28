@@ -49,39 +49,26 @@ BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(KnotVector const &kno
 }
 
 // This creates a new basis function iff requested basis function does not exist.
-// Else raw pointer of existing basis function.
-//template<int para_dim>
-//BSplineBasisFunction * BSplineBasisFunction::CreateDynamic(
+// Else shared pointer of existing basis function.
 SharedPointer<BSplineBasisFunction> BSplineBasisFunction::CreateDynamic(
-    KnotVector const &knot_vector /* NOT shared_ptr */,
+    KnotVector const &knot_vector,
     KnotSpan const &start_of_support,
     Degree degree,
-    //UniqueBSplineBasisFunctions<para_dim> &unique_basis_functions,
     UniqueBSplineBasisFunctions &unique_basis_functions,
     Tolerance const &tolerance) {
 
-    // proof of concept. better ideas are encouraged
+  // make a unique identifier str
 
-    // make a unique identifier str
-    // kv
-  const void * kv_address = static_cast<const void*>(&knot_vector);
-  std::stringstream kv_ss;
-  kv_ss << kv_address;
-
-    /*
-    const std::string kv_name = ss.str();
-    // start of support
-    const std::string sos_name = std::to_string(start_of_support.Get());
-    // degree
-    const std::string d_name = std::to_string(degree.Get());
-    */
+  /* not required, as `RecreateBasisFunctions` iterates through dim */
+  /* and gives correct kv                                           */
+  // kv
+  //const void * kv_address = static_cast<const void*>(&knot_vector);
+  //std::stringstream kv_ss;
+  //kv_ss << kv_address;
 
   const std::string basis_identifier =
-      kv_ss.str() + "_"
-      + std::to_string(start_of_support.Get()) + "_"
+      std::to_string(start_of_support.Get()) + "_"
       + std::to_string(degree.Get());
-
-  std::cout << basis_identifier << "\n";
 
   // And does this exist?
   const auto& existing_basis_function =
@@ -89,27 +76,30 @@ SharedPointer<BSplineBasisFunction> BSplineBasisFunction::CreateDynamic(
 
   if (existing_basis_function != unique_basis_functions.end()) {
     // jackpot
-    std::cout << "jackpot\n";
     return existing_basis_function->second;
+
   } else {
     // does not exist. create - store - return
-    std::cout << "create_new\n";
+    // TODO make_shared
     if (degree == Degree{}) {
-      auto new_basis = SharedPointer<ZeroDegreeBSplineBasisFunction>(new ZeroDegreeBSplineBasisFunction(
-                knot_vector,
-                start_of_support,
-                tolerance));
+      auto new_basis = std::make_shared<ZeroDegreeBSplineBasisFunction>(
+          knot_vector,
+          start_of_support,
+          tolerance
+      );
       unique_basis_functions[basis_identifier] = new_basis;
 
       return new_basis;
     } else {
-      auto new_basis = SharedPointer<NonZeroDegreeBSplineBasisFunction>(new NonZeroDegreeBSplineBasisFunction(
-                knot_vector,
-                start_of_support,
-                move(degree),
-                unique_basis_functions,
-                tolerance));
+      auto new_basis = std::make_shared<NonZeroDegreeBSplineBasisFunction>(
+          knot_vector,
+          start_of_support,
+          move(degree),
+          unique_basis_functions,
+          tolerance
+      );
       unique_basis_functions[basis_identifier] = new_basis;
+
       return new_basis;
     }
   }
