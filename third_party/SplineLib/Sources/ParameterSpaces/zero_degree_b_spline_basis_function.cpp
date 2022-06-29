@@ -67,25 +67,20 @@ ZeroDegreeBSplineBasisFunction::operator()(
   /* return operator()(parametric_coordinate, tolerance); */
   // But, here it is.
 
-  // prepare string of memory addresses
-  const void* bf_address = static_cast<const void*>(this);
-  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
-  std::stringstream bf_ss, pc_ss;
-  bf_ss << bf_address;
-  pc_ss << pc_address;
-  // add "_0" to have conforming naming scheme as Derivative 
-  const String search_key = bf_ss.str() + pc_ss.str() + "_0";
+  // use UniqueID of the basis function as key
+  const size_t& key = UniqueID();
 
-  const auto& existing_evaluation =
-      unique_evaluations.find(search_key);
+  // see if there's value
+  const auto& existing_evaluation = unique_evaluations.find(key);
 
   if (existing_evaluation != unique_evaluations.end()) {
     // jackpot
     return existing_evaluation->second;
+
   } else {
     // create - store - return
     const auto new_value = operator()(parametric_coordinate, tolerance);
-    unique_evaluations[search_key] = new_value;
+    unique_evaluations[key] = new_value;
 
     return new_value;
   }
@@ -109,7 +104,7 @@ ZeroDegreeBSplineBasisFunction::Type_
 ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
-    UniqueEvaluations& unique_evaluations,
+    UniqueDerivatives& unique_derivatives,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -118,36 +113,10 @@ ZeroDegreeBSplineBasisFunction::operator()(
     Throw(exception, "splinelib::sources::parameter_spaces::ZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
-  // search key preparation
-  // -> prepare string of memory addresses and derivative value
-  const void* bf_address = static_cast<const void*>(this);
-  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
-  std::stringstream bf_ss, pc_ss;
-  bf_ss << bf_address;
-  pc_ss << pc_address;
-  const String search_key =
-      bf_ss.str()
-      + pc_ss.str()
-      + "_"
-      + std::to_string(derivative.Get());
-
-  // see if there's value
-  const auto& existing_evaluation =
-      unique_evaluations.find(search_key);
-
-  if (existing_evaluation != unique_evaluations.end()) {
-    // jackpot
-    return existing_evaluation->second;
-
-  } else {
-    // compute - store - return
-    const auto new_value  = (derivative == Derivative{} ? (
-        operator()(parametric_coordinate, tolerance)
-    ) : Type_{});
-    unique_evaluations[search_key] = new_value;
-
-    return new_value;
-  }
+  return (derivative == Derivative{} ? operator()(parametric_coordinate,
+                                                  unique_derivatives[0],
+                                                  tolerance)
+                                     : Type_{});
 }
 
 }  // namespace splinelib::sources::parameter_spaces

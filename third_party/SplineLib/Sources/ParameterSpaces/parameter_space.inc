@@ -253,7 +253,7 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunctionDerivative(
     Index_ const &basis_function_index,
     ParametricCoordinate_ const &parametric_coordinate,
     Derivative_ const &derivative,
-    UniqueEvaluations_& unique_evaluations,
+    UniqueDerivatives_& unique_derivatives,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   Message const kName{"splinelib::sources::parameter_spaces::ParameterSpace::EvaluateBasisFunctionDerivative"};
@@ -280,7 +280,7 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunctionDerivative(
         basis_function_derivative_value *=
             basis_function(parametric_coordinate[current_dimension],
                            derivative[current_dimension],
-                           unique_evaluations[current_dimension],
+                           unique_derivatives[current_dimension],
                            tolerance);
       }
   );

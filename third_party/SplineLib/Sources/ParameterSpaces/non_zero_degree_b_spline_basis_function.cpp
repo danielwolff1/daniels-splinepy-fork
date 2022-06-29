@@ -43,7 +43,7 @@ NonZeroDegreeBSplineBasisFunction::NonZeroDegreeBSplineBasisFunction(
     Degree degree,
     UniqueBSplineBasisFunctions &unique_basis_functions,
     Tolerance const &tolerance)
-        : Base_(knot_vector,
+        : Base_(knot_vector, /* generates this_hash_ */
                 start_of_support,
                 std::move(degree),
                 tolerance),
@@ -130,18 +130,11 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     UniqueEvaluations& unique_evaluations,
     Tolerance const &tolerance) const {
 
-  // prepare string of memory addresses
-  const void* bf_address = static_cast<const void*>(this);
-  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
-  std::stringstream bf_ss, pc_ss;
-  bf_ss << bf_address;
-  pc_ss << pc_address;
-  // add "_0" to have conforming naming scheme as Derivative
-  const String search_key = bf_ss.str() + pc_ss.str() + "_0";
+  // use uniqueID of the basis function as key
+  const size_t& key = UniqueID();
 
   // see if there's value
-  const auto& existing_evaluation =
-      unique_evaluations.find(search_key);
+  const auto& existing_evaluation = unique_evaluations.find(key);
 
   if (existing_evaluation != unique_evaluations.end()) {
     // jackpot
@@ -162,7 +155,7 @@ NonZeroDegreeBSplineBasisFunction::operator()(
                                                      tolerance))
     ) : Type_{};
     // store
-    unique_evaluations[search_key] = new_value;
+    unique_evaluations[key] = new_value;
 
     return new_value;
   }
@@ -198,7 +191,7 @@ NonZeroDegreeBSplineBasisFunction::Type_
 NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
-    UniqueEvaluations& unique_evaluations,
+    UniqueDerivatives& unique_derivatives,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -207,61 +200,67 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     Throw(exception, "splinelib::sources::parameter_spaces::NonZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
-  // search key preparation
-  // -> prepare string of memory addresses and derivative value
-  const void* bf_address = static_cast<const void*>(this);
-  const void* pc_address = static_cast<const void*>(&parametric_coordinate);
-  std::stringstream bf_ss, pc_ss;
-  bf_ss << bf_address;
-  pc_ss << pc_address;
-  const String search_key =
-      bf_ss.str()
-      + pc_ss.str()
-      + "_"
-      + std::to_string(derivative.Get());
 
-  // see if there's value
-  const auto& existing_evaluation =
-      unique_evaluations.find(search_key);
+  // UniqueDeriatives are nested. need 2 keys.
+  const auto& derivative_key = derivative.Get();
+  const auto& evaluation_key = UniqueID();
 
-  if (existing_evaluation != unique_evaluations.end()) {
-    // jackpot
-    std::cout << "DERjackpot\n";
-    return existing_evaluation->second;
+  //bool derivative_exists{false};
 
-  } else {
-    // compute
-    if (derivative != Derivative{}) {
-      if (IsInSupport(parametric_coordinate, tolerance)) {
-        Derivative const lower_derivative = (derivative - Derivative{1});
-        // unordered_map::operator[] returns ref.
-        // compute and store
-        unique_evaluations[search_key] = 
-            (left_quotient_derivative_
-             * (*left_lower_degree_basis_function_)(parametric_coordinate,
-                                                    lower_derivative,
-                                                    unique_evaluations,
-                                                    tolerance))
-            - (right_quotient_derivative_
-               * (*right_lower_degree_basis_function_)(
-                       parametric_coordinate,
-                       lower_derivative,
-                       unique_evaluations,
-                       tolerance
-                 ));
+  // see if there's derivative
+  const auto& existing_derivative = unique_derivatives.find(derivative_key);
 
-      } else {
-        unique_evaluations[search_key] = Type_{};
-      }
-    } else {
-      unique_evaluations[search_key] = operator()(parametric_coordinate,
-                                                  unique_evaluations,
-                                                  tolerance);
+  if (existing_derivative != unique_derivatives.end()) {
+    //derivative_exists = true;
+    // nice, see if there's evaluation
+    const auto& existing_evaluation =
+        existing_derivative->second.find(evaluation_key);
+
+    if (existing_evaluation != existing_derivative->second.end()) {
+      // jackpot
+      return existing_evaluation->second;
     }
   }
 
-  // TODO: hope it doesn't search again with optimization
-  return unique_evaluations[search_key];
+  // we are here because either derivative didn't exist or evaluation.
+  // compute
+  Type_ new_value{};
+  if (derivative != Derivative{}) {
+    if (IsInSupport(parametric_coordinate, tolerance)) {
+      Derivative const lower_derivative = (derivative - Derivative{1});
+      new_value = 
+          (left_quotient_derivative_
+           * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                                  lower_derivative,
+                                                  unique_derivatives,
+                                                  tolerance))
+          - (right_quotient_derivative_
+             * (*right_lower_degree_basis_function_)(
+                     parametric_coordinate,
+                     lower_derivative,
+                     unique_derivatives,
+                     tolerance
+               ));
+
+    }
+  } else {
+    new_value = operator()(parametric_coordinate,
+                           unique_derivatives[0],
+                           tolerance);
+  }
+
+  // store
+  //if (derivative_exists) {
+  //  // This requires existing derivative to be non-const
+  //  existing_derivative->second[evaluation_key] = new_value;
+  //} else {
+  //  unique_derivatives[derivative_key][evaluation_key] = new_value;
+  //}
+  //
+  // the one above might be unnecessary.
+  unique_derivatives[derivative_key][evaluation_key] = new_value;
+
+  return new_value;
 }
 
 

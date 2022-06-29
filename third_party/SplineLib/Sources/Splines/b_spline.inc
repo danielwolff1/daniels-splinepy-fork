@@ -113,7 +113,7 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
   Coordinate_ evaluated_b_spline_derivative{};
 
   // prepare map to hold unique evaluation values.
-  typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+  typename ParameterSpace_::UniqueDerivatives_ unique_derivatives;
 
   for (Index_ non_zero_basis_function{parameter_space.First()};
        non_zero_basis_function != parameter_space.Behind();
@@ -130,7 +130,7 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
                 basis_function,
                 parametric_coordinate,
                 derivative,
-                unique_evaluations
+                unique_derivatives
             )
         )
     );

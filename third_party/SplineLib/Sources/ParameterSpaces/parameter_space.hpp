@@ -98,8 +98,8 @@ class ParameterSpace {
   using Knot_ = typename Knots_::value_type;
 
   // same reason as UniqueBSplineBasisFunctions_
-  using UniqueEvaluations_ =
-      UniqueEvaluationsArray<parametric_dimensionality>;
+  using UniqueEvaluations_ = UniqueEvaluationsArray<parametric_dimensionality>;
+  using UniqueDerivatives_ = UniqueDerivativesArray<parametric_dimensionality>;
 
   ParameterSpace() = default;
   ParameterSpace(KnotVectors_ knot_vectors, Degrees_ degrees, Tolerance const &tolerance = kEpsilon);
@@ -142,7 +142,7 @@ class ParameterSpace {
       Index_ const &basis_function_index,
       ParametricCoordinate_ const &parametric_coordinate,
       Derivative_ const &derivative,
-      UniqueEvaluations_& unique_evaluations,
+      UniqueDerivatives_& unique_derivatives,
       Tolerance const &tolerance = kEpsilon) const;
 
   virtual InsertionInformation_ InsertKnot(Dimension const &dimension, Knot_ knot,

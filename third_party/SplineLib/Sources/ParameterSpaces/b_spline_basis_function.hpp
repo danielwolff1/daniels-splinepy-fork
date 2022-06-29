@@ -33,15 +33,27 @@ class BSplineBasisFunction;
 using UniqueBSplineBasisFunctions =
     UnorderedMap<String, SharedPointer<BSplineBasisFunction>>;
 
-template <int parametric_dimensionality>
+template<int parametric_dimensionality>
 using UniqueBSplineBasisFunctionsArray =
     Array<UniqueBSplineBasisFunctions, parametric_dimensionality>;
 
-using UniqueEvaluations = UnorderedMap<String, ParametricCoordinate::Type_>;
+// key is hash value of basis function pointer.
+// you don't need more information, since this map is generated for
+// each evaluation of a certain parametric coordinate, meaning, it will always
+// be the same anyways.
+using UniqueEvaluations = UnorderedMap<size_t, ParametricCoordinate::Type_>;
+// order map this way, so that it is easy to pass 0th-derivative-evaluations to
+// evaluations
+using UniqueDerivatives = 
+    UnorderedMap<Derivative::Type_, UniqueEvaluations>;
 
-template <int parametric_dimensionality>
+template<int parametric_dimensionality>
 using UniqueEvaluationsArray =
     Array<UniqueEvaluations, parametric_dimensionality>;
+
+template<int parametric_dimensionality>
+using UniqueDerivativesArray =
+    Array<UniqueDerivatives, parametric_dimensionality>;
 
 // BSplineBasisFunctions N_{i,p} are non-negative, piecewise polynomial functions of degree p forming a basis of the
 // vector space of all piecewise polynomial functions of degree p corresponding to some knot vector.  The B-spline basis
@@ -89,7 +101,7 @@ class BSplineBasisFunction {
                            Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
-                           UniqueEvaluations& unique_evaluations,
+                           UniqueDerivatives& unique_derivatives,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 
  protected:
@@ -104,9 +116,14 @@ class BSplineBasisFunction {
   // The last knot is treated in a special way (cf. KnotVector::FindSpan).
   bool IsInSupport(ParametricCoordinate const &parametric_coordinate, Tolerance const &tolerance = kEpsilon) const;
 
+  virtual size_t UniqueID() const {return this_hash_;};
+
   Degree degree_;
   ParametricCoordinate start_knot_, end_knot_;
   bool end_knot_equals_last_knot_;
+
+ private:
+  size_t this_hash_;
 };
 
 bool IsEqual(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs, Tolerance const &tolerance = kEpsilon);

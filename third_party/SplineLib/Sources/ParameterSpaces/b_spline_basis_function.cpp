@@ -79,7 +79,6 @@ SharedPointer<BSplineBasisFunction> BSplineBasisFunction::CreateDynamic(
 
   } else {
     // does not exist. create - store - return
-    // TODO make_shared
     if (degree == Degree{}) {
       auto new_basis = std::make_shared<ZeroDegreeBSplineBasisFunction>(
           knot_vector,
@@ -106,12 +105,18 @@ SharedPointer<BSplineBasisFunction> BSplineBasisFunction::CreateDynamic(
 
 }
 
-BSplineBasisFunction::BSplineBasisFunction(KnotVector const &knot_vector, KnotSpan const &start_of_support,
-                                           Degree degree, Tolerance const &tolerance) : degree_(move(degree)) {
+BSplineBasisFunction::BSplineBasisFunction(
+    KnotVector const &knot_vector,
+    KnotSpan const &start_of_support,
+    Degree degree,
+    Tolerance const &tolerance) 
+        : degree_(move(degree)),
+          this_hash_(std::hash<BSplineBasisFunction*>{}(this)) {
   Index const start{start_of_support.Get()};
   start_knot_ = knot_vector[start];
   end_knot_ = knot_vector[start + Index{degree_.Get() + 1}];
-  end_knot_equals_last_knot_ = knot_vector.DoesParametricCoordinateEqualBack(end_knot_, tolerance);
+  end_knot_equals_last_knot_ =
+      knot_vector.DoesParametricCoordinateEqualBack(end_knot_, tolerance);
 }
 
 bool IsEqual(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs, Tolerance const &tolerance) {
