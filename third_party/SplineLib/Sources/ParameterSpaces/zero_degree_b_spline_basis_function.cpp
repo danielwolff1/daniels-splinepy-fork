@@ -53,6 +53,9 @@ ZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametri
     Throw(exception, "splinelib::sources::parameter_spaces::ZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
+  if (!IsInSupport(parametric_coordinate, tolerance)) {
+    std::cout << "   THIS ZERO NOT IN SUPPORT";
+  }
   return (IsInSupport(parametric_coordinate, tolerance) ? Type_{1.0} : Type_{});
 }
 
@@ -72,15 +75,17 @@ ZeroDegreeBSplineBasisFunction::operator()(
 
   // see if there's value
   const auto& existing_evaluation = unique_evaluations.find(key);
-
+  std::cout << "zero" << key;
   if (existing_evaluation != unique_evaluations.end()) {
     // jackpot
+    std::cout << "jacques;\n";
     return existing_evaluation->second;
 
   } else {
     // create - store - return
     const auto new_value = operator()(parametric_coordinate, tolerance);
     unique_evaluations[key] = new_value;
+    std::cout << "\n";
 
     return new_value;
   }

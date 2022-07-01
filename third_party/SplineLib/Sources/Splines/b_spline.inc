@@ -94,6 +94,7 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
                                                   unique_evaluations)
         )
     );
+    std::cout << "n_u_evals: " << unique_evaluations[0].size() << "\n";
   }
   return evaluated_b_spline;
 }

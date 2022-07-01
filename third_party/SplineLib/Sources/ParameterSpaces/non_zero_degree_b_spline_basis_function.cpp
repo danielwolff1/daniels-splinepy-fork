@@ -132,15 +132,22 @@ NonZeroDegreeBSplineBasisFunction::operator()(
 
   // use uniqueID of the basis function as key
   const size_t& key = UniqueID();
+  std::cout << key << "deg-" << degree_.Get();
 
   // see if there's value
   const auto& existing_evaluation = unique_evaluations.find(key);
 
   if (existing_evaluation != unique_evaluations.end()) {
     // jackpot
+    std::cout << "jacques;\n";
     return existing_evaluation->second;
 
   } else {
+  if (!IsInSupport(parametric_coordinate, tolerance)){
+    std::cout << "    NOT IN SUPPORT!";
+  }
+
+    std::cout << "\n";
     // compute
     const auto new_value = IsInSupport(parametric_coordinate, tolerance) ? (
         ((parametric_coordinate - start_knot_).Get()
