@@ -63,33 +63,27 @@ ZeroDegreeBSplineBasisFunction::Type_
 ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
+    const bool should_i_compute,
     Tolerance const &tolerance) const {
 
-
-  // Maybe this one below is good enough, 
+  // Probably this one below is the fastest
   /* return operator()(parametric_coordinate, tolerance); */
   // But, here it is.
 
-  // use UniqueID of the basis function as key
-  const size_t& key = UniqueID();
-
-  // see if there's value
-  const auto& existing_evaluation = unique_evaluations.find(key);
-  std::cout << "zero" << key;
-  if (existing_evaluation != unique_evaluations.end()) {
-    // jackpot
-    std::cout << "jacques;\n";
-    return existing_evaluation->second;
-
-  } else {
-    // create - store - return
-    const auto new_value = operator()(parametric_coordinate, tolerance);
-    unique_evaluations[key] = new_value;
-    std::cout << "\n";
-
-    return new_value;
+  // Support check
+  if (!IsInSupport(parametric_coordinate, tolerance)) {
+    return Type_{};
   }
 
+  if (should_i_compute) {
+    unique_evaluations[0] = std::move(Type_{1.0});
+
+    return Type_{1.0};
+
+  } else {
+    //return Type_{1.0};
+    return unique_evaluations[0];
+  }
 }
 
 ZeroDegreeBSplineBasisFunction::Type_
@@ -110,6 +104,7 @@ ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
     UniqueDerivatives& unique_derivatives,
+    const bool should_i_compute,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -118,10 +113,19 @@ ZeroDegreeBSplineBasisFunction::operator()(
     Throw(exception, "splinelib::sources::parameter_spaces::ZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
-  return (derivative == Derivative{} ? operator()(parametric_coordinate,
-                                                  unique_derivatives[0],
-                                                  tolerance)
-                                     : Type_{});
+  if (derivative == Derivative{}) {
+    return operator()(parametric_coordinate,
+                      unique_derivatives,
+                      should_i_compute,
+                      tolerance);
+  } else {
+    return Type_{};
+  }
+
+ // return (derivative == Derivative{} ? operator()(parametric_coordinate,
+ //                                                 unique_derivatives[0],
+ //                                                 tolerance)
+  //                                   : Type_{});
 }
 
 }  // namespace splinelib::sources::parameter_spaces

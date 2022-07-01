@@ -217,6 +217,7 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunction(
         basis_function_value *= basis_function(
             parametric_coordinate[current_dimension],
             unique_evaluations[current_dimension],
+            true,
             tolerance
         );
       }
@@ -281,6 +282,7 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunctionDerivative(
             basis_function(parametric_coordinate[current_dimension],
                            derivative[current_dimension],
                            unique_derivatives[current_dimension],
+                           true,
                            tolerance);
       }
   );

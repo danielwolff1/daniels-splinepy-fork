@@ -128,45 +128,43 @@ NonZeroDegreeBSplineBasisFunction::Type_
 NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
+    const bool should_i_compute,
     Tolerance const &tolerance) const {
 
-  // use uniqueID of the basis function as key
-  const size_t& key = UniqueID();
-  std::cout << key << "deg-" << degree_.Get();
-
-  // see if there's value
-  const auto& existing_evaluation = unique_evaluations.find(key);
-
-  if (existing_evaluation != unique_evaluations.end()) {
-    // jackpot
-    std::cout << "jacques;\n";
-    return existing_evaluation->second;
-
-  } else {
-  if (!IsInSupport(parametric_coordinate, tolerance)){
-    std::cout << "    NOT IN SUPPORT!";
+  // First, support check - exit if not
+  if (!IsInSupport(parametric_coordinate, tolerance)) {
+    return Type_{};
   }
 
-    std::cout << "\n";
-    // compute
-    const auto new_value = IsInSupport(parametric_coordinate, tolerance) ? (
+  // vector entry index depends on curren't basis function's degree
+  const auto& id = degree_.Get();
+
+  // forget lookup. evaluation is quite deterministic
+  if (should_i_compute) {
+    // it is your duty to compute
+    // top-level-degree basis functions and all right_lower ones.
+    const auto right_value =
         ((parametric_coordinate - start_knot_).Get()
           * left_denominator_inverse_
           * (*left_lower_degree_basis_function_)(parametric_coordinate,
                                                  unique_evaluations,
+                                                 false,
                                                  tolerance))
-         + ((end_knot_ - parametric_coordinate).Get()
-             * right_denominator_inverse_
-             * (*right_lower_degree_basis_function_)(parametric_coordinate,
-                                                     unique_evaluations,
-                                                     tolerance))
-    ) : Type_{};
-    // store
-    unique_evaluations[key] = new_value;
+        + ((end_knot_ - parametric_coordinate).Get()
+            * right_denominator_inverse_
+            * (*right_lower_degree_basis_function_)(parametric_coordinate,
+                                                    unique_evaluations,
+                                                    true,
+                                                    tolerance));
+    // save for not right ones: left.
+    unique_evaluations[id] = right_value;
 
-    return new_value;
+    return std::move(right_value);
+
+  } else {
+    // lucky, just take a look.
+    return unique_evaluations[id];
   }
-
 }
 
 // Based on recurrence formula due to DeBoor, Cox, and Mansfield (see NURBS book Eq. (2.9)).
@@ -199,6 +197,7 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
     UniqueDerivatives& unique_derivatives,
+    const bool should_i_compute,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -208,66 +207,56 @@ NonZeroDegreeBSplineBasisFunction::operator()(
   }
 #endif
 
-  // UniqueDeriatives are nested. need 2 keys.
-  const auto& derivative_key = derivative.Get();
-  const auto& evaluation_key = UniqueID();
-
-  //bool derivative_exists{false};
-
-  // see if there's derivative
-  const auto& existing_derivative = unique_derivatives.find(derivative_key);
-
-  if (existing_derivative != unique_derivatives.end()) {
-    //derivative_exists = true;
-    // nice, see if there's evaluation
-    const auto& existing_evaluation =
-        existing_derivative->second.find(evaluation_key);
-
-    if (existing_evaluation != existing_derivative->second.end()) {
-      // jackpot
-      return existing_evaluation->second;
-    }
+  // First, support check - exit if not
+  if (!IsInSupport(parametric_coordinate, tolerance)) {
+    return Type_{};
   }
 
-  // we are here because either derivative didn't exist or evaluation.
-  // compute
-  Type_ new_value{};
-  if (derivative != Derivative{}) {
-    if (IsInSupport(parametric_coordinate, tolerance)) {
+  // vector entry index depends on curren't basis function's degree
+  const auto& id = derivative.Get();
+
+  if (should_i_compute) {
+    if (derivative != Derivative{}) {
       Derivative const lower_derivative = (derivative - Derivative{1});
-      new_value = 
+      // same idea as evaluation.
+      // top-level-derivative and all right ones
+      const auto right_one = 
           (left_quotient_derivative_
-           * (*left_lower_degree_basis_function_)(parametric_coordinate,
-                                                  lower_derivative,
-                                                  unique_derivatives,
-                                                  tolerance))
+           * (*left_lower_degree_basis_function_)(
+                    parametric_coordinate,
+                    lower_derivative,
+                    unique_derivatives,
+                    false,
+                    tolerance
+             ))
           - (right_quotient_derivative_
              * (*right_lower_degree_basis_function_)(
                      parametric_coordinate,
                      lower_derivative,
                      unique_derivatives,
+                     true,
                      tolerance
                ));
+      unique_derivatives[id] = right_one;
 
+      return std::move(right_one);
+
+    } else {
+      // zeroth derivative evaluation.
+      // normal evaluation. this will only be done once!
+      UniqueEvaluations unique_evaluations(degree_.Get() + 1);
+      const auto evaluation = operator()(parametric_coordinate,
+                                         unique_evaluations,
+                                         true,
+                                         tolerance);
+      unique_derivatives[id] = evaluation;
+
+      return std::move(evaluation);
     }
   } else {
-    new_value = operator()(parametric_coordinate,
-                           unique_derivatives[0],
-                           tolerance);
+    // direct return!
+    return unique_derivatives[id];
   }
-
-  // store
-  //if (derivative_exists) {
-  //  // This requires existing derivative to be non-const
-  //  existing_derivative->second[evaluation_key] = new_value;
-  //} else {
-  //  unique_derivatives[derivative_key][evaluation_key] = new_value;
-  //}
-  //
-  // the one above might be unnecessary.
-  unique_derivatives[derivative_key][evaluation_key] = new_value;
-
-  return new_value;
 }
 
 

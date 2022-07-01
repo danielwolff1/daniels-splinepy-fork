@@ -74,9 +74,16 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
   ParameterSpace_ const &parameter_space = *Base_::parameter_space_;
   Coordinate_ evaluated_b_spline{};
 
-  // prepare map to hold unique evaluation values.
+  // prepare vectors to hold unique evaluation values.
   typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
-
+  int i{};
+  for (const auto& degree : parameter_space.degrees_) {
+    // only need same number as degrees, however there's `+ 1`
+    // to provide a place for highest dim.
+    unique_evaluations[i] =
+        parameter_spaces::UniqueEvaluations(degree.Get() + 1);
+    ++i;
+  }
   for (Index_ non_zero_basis_function{parameter_space.First()};
        non_zero_basis_function != parameter_space.Behind();
        ++non_zero_basis_function) {
@@ -94,7 +101,6 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
                                                   unique_evaluations)
         )
     );
-    std::cout << "n_u_evals: " << unique_evaluations[0].size() << "\n";
   }
   return evaluated_b_spline;
 }
@@ -115,6 +121,15 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
 
   // prepare map to hold unique evaluation values.
   typename ParameterSpace_::UniqueDerivatives_ unique_derivatives;
+
+  int i{};
+  for (const auto& i_derivative : derivative) { 
+    // only need same number as derivatives. however there's `+ 1`
+    // to provide a place for highest dim.
+    unique_derivatives[i] =
+        parameter_spaces::UniqueEvaluations(i_derivative.Get() + 1);
+    ++i;
+  }
 
   for (Index_ non_zero_basis_function{parameter_space.First()};
        non_zero_basis_function != parameter_space.Behind();

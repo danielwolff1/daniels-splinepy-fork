@@ -41,11 +41,15 @@ using UniqueBSplineBasisFunctionsArray =
 // you don't need more information, since this map is generated for
 // each evaluation of a certain parametric coordinate, meaning, it will always
 // be the same anyways.
-using UniqueEvaluations = UnorderedMap<size_t, ParametricCoordinate::Type_>;
+
+// it is just a holder. nothing special
+using UniqueEvaluations = Vector<ParametricCoordinate::Type_>;
+// turns out they both can have the same type.
+using UniqueDerivatives = UniqueEvaluations;
 // order map this way, so that it is easy to pass 0th-derivative-evaluations to
 // evaluations
-using UniqueDerivatives = 
-    UnorderedMap<Derivative::Type_, UniqueEvaluations>;
+//using UniqueDerivatives = 
+//    UnorderedMap<Derivative::Type_, UniqueEvaluations>;
 
 template<int parametric_dimensionality>
 using UniqueEvaluationsArray =
@@ -95,6 +99,7 @@ class BSplineBasisFunction {
                            Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            UniqueEvaluations& unique_evaluations,
+                           const bool should_i_compute,
                            Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
@@ -102,6 +107,7 @@ class BSplineBasisFunction {
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
                            UniqueDerivatives& unique_derivatives,
+                           const bool should_i_compute,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 
  protected:
