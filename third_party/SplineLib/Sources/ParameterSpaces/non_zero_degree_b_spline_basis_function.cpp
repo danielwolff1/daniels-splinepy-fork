@@ -130,16 +130,11 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     UniqueEvaluations& unique_evaluations,
     const int tree_info,
     Tolerance const &tolerance) const {
-  const auto& id = degree_.Get() + ((tree_info >= 0) ? tree_info : 0);
 
-  std::cout <<  "i just entered: " << id;
-    // First, support check - exit if not
+  // First, support check - exit if not
   if (!IsInSupport(parametric_coordinate, tolerance)) {
-    std::cout << " NOTINSUPPORT " << id << "\n";
     return Type_{};
   }
-
-  std::cout << "\n";
 
   // vector entry index depends on curren't basis function's degree
   //const auto& id = degree_.Get();
@@ -148,7 +143,6 @@ NonZeroDegreeBSplineBasisFunction::operator()(
   // evaluation is quite deterministic: it is clear when to lookup
   if (tree_info == -2) {
     // lucky, just take a look.
-    std::cout << "looking up degree " << id << ": " << unique_evaluations[id] << "\n";
     return unique_evaluations[degree_.Get()];
   } else if (tree_info >= 0) {
     // indicates this is top-level nodes
@@ -180,7 +174,6 @@ NonZeroDegreeBSplineBasisFunction::operator()(
   // save for not right ones and top level ones.
   unique_evaluations[degree_.Get() + entry_offset] = right_value;
 
-  std::cout << "SAVING degree " << id << ": " << right_value << "\n";
   return std::move(right_value);
 
 }

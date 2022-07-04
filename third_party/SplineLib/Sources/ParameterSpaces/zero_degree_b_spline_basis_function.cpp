@@ -53,9 +53,6 @@ ZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parametri
     Throw(exception, "splinelib::sources::parameter_spaces::ZeroDegreeBSplineBasisFunction::operator()");
   }
 #endif
-  if (!IsInSupport(parametric_coordinate, tolerance)) {
-    std::cout << "   THIS ZERO NOT IN SUPPORT";
-  }
   return (IsInSupport(parametric_coordinate, tolerance) ? Type_{1.0} : Type_{});
 }
 
@@ -66,9 +63,8 @@ ZeroDegreeBSplineBasisFunction::operator()(
     const int tree_info,
     Tolerance const &tolerance) const {
 
-    std::cout << "i am in zero" << degree_.Get();
-
   // Probably this one below is the fastest
+  // -- it is. 
    return operator()(parametric_coordinate, tolerance);
   // But, here it is.
 /*
