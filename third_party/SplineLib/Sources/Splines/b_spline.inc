@@ -76,12 +76,19 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
 
   // prepare vectors to hold unique evaluation values.
   typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+
   int i{};
   for (const auto& degree : parameter_space.degrees_) {
-    // only need same number as degrees, however there's `+ 1`
-    // to provide a place for highest dim.
-    unique_evaluations[i] =
-        parameter_spaces::UniqueEvaluations(degree.Get() + 1);
+    // This is a way to avoid 
+    // entry hints:
+    //   0 : zero-th degree evaluations  <- not entered
+    //   1 : first degree evaluation
+    //   ...
+    //   degree + 0 : top-level evaluation, 0th support
+    //   ...
+    //   degree + degree : top-level evaluation, last support 
+    unique_evaluations[i] = 
+        parameter_spaces::UniqueEvaluations(degree.Get() * 2 + 1, -1.0);
     ++i;
   }
   for (Index_ non_zero_basis_function{parameter_space.First()};
@@ -97,6 +104,7 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
         utilities::std_container_operations::Multiply(
             (*vector_space_)[basis_function.GetIndex1d()],
             parameter_space.EvaluateBasisFunction(basis_function,
+                                                  non_zero_basis_function,
                                                   parametric_coordinate,
                                                   unique_evaluations)
         )
@@ -127,7 +135,7 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
     // only need same number as derivatives. however there's `+ 1`
     // to provide a place for highest dim.
     unique_derivatives[i] =
-        parameter_spaces::UniqueEvaluations(i_derivative.Get() + 1);
+        parameter_spaces::UniqueDerivatives(i_derivative.Get() + 1);
     ++i;
   }
 
