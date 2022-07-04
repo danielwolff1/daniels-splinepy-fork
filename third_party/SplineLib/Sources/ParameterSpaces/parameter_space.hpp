@@ -130,6 +130,7 @@ class ParameterSpace {
       Tolerance const &tolerance = kEpsilon) const;
   virtual Type_ EvaluateBasisFunction(
       Index_ const &basis_function_index,
+      Index_ const &basis_function_index_without_offset,
       ParametricCoordinate_ const &parametric_coordinate,
       UniqueEvaluations_& unique_evaluations,
       Tolerance const &tolerance = kEpsilon) const;

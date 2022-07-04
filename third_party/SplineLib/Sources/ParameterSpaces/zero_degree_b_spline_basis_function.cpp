@@ -63,27 +63,32 @@ ZeroDegreeBSplineBasisFunction::Type_
 ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
-    const bool should_i_compute,
+    const int tree_info,
     Tolerance const &tolerance) const {
 
-  // Probably this one below is the fastest
-  /* return operator()(parametric_coordinate, tolerance); */
-  // But, here it is.
+    std::cout << "i am in zero" << degree_.Get();
 
+  // Probably this one below is the fastest
+   return operator()(parametric_coordinate, tolerance);
+  // But, here it is.
+/*
   // Support check
   if (!IsInSupport(parametric_coordinate, tolerance)) {
+    std::cout << "  This zero not in support\n";
     return Type_{};
   }
 
-  if (should_i_compute) {
+  if (tree_info == -1) {
     unique_evaluations[0] = std::move(Type_{1.0});
-
+    std:: cout << "\n";
     return Type_{1.0};
 
   } else {
     //return Type_{1.0};
+    std::cout << "zero hit!";
     return unique_evaluations[0];
   }
+*/
 }
 
 ZeroDegreeBSplineBasisFunction::Type_

@@ -128,43 +128,61 @@ NonZeroDegreeBSplineBasisFunction::Type_
 NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
-    const bool should_i_compute,
+    const int tree_info,
     Tolerance const &tolerance) const {
+  const auto& id = degree_.Get() + ((tree_info >= 0) ? tree_info : 0);
 
-  // First, support check - exit if not
+  std::cout <<  "i just entered: " << id;
+    // First, support check - exit if not
   if (!IsInSupport(parametric_coordinate, tolerance)) {
+    std::cout << " NOTINSUPPORT " << id << "\n";
     return Type_{};
   }
 
+  std::cout << "\n";
+
   // vector entry index depends on curren't basis function's degree
-  const auto& id = degree_.Get();
+  //const auto& id = degree_.Get();
 
-  // forget lookup. evaluation is quite deterministic
-  if (should_i_compute) {
-    // it is your duty to compute
-    // top-level-degree basis functions and all right_lower ones.
-    const auto right_value =
-        ((parametric_coordinate - start_knot_).Get()
-          * left_denominator_inverse_
-          * (*left_lower_degree_basis_function_)(parametric_coordinate,
-                                                 unique_evaluations,
-                                                 false,
-                                                 tolerance))
-        + ((end_knot_ - parametric_coordinate).Get()
-            * right_denominator_inverse_
-            * (*right_lower_degree_basis_function_)(parametric_coordinate,
-                                                    unique_evaluations,
-                                                    true,
-                                                    tolerance));
-    // save for not right ones: left.
-    unique_evaluations[id] = right_value;
-
-    return std::move(right_value);
-
-  } else {
+  int entry_offset{};
+  // evaluation is quite deterministic: it is clear when to lookup
+  if (tree_info == -2) {
     // lucky, just take a look.
-    return unique_evaluations[id];
+    std::cout << "looking up degree " << id << ": " << unique_evaluations[id] << "\n";
+    return unique_evaluations[degree_.Get()];
+  } else if (tree_info >= 0) {
+    // indicates this is top-level nodes
+    // check if this has been computed
+    const auto& top_level_evaluation =
+        unique_evaluations[degree_.Get() + tree_info];
+    // return
+    if (top_level_evaluation >= 0.0) {
+       return top_level_evaluation;
+    }
+
+    entry_offset = tree_info;
   }
+  // it is your duty to compute
+  // top-level-degree basis functions and all right_lower ones.
+  const auto right_value =
+      ((parametric_coordinate - start_knot_).Get()
+        * left_denominator_inverse_
+        * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                               unique_evaluations,
+                                               -2,
+                                               tolerance))
+      + ((end_knot_ - parametric_coordinate).Get()
+          * right_denominator_inverse_
+          * (*right_lower_degree_basis_function_)(parametric_coordinate,
+                                                  unique_evaluations,
+                                                  -1,
+                                                  tolerance));
+  // save for not right ones and top level ones.
+  unique_evaluations[degree_.Get() + entry_offset] = right_value;
+
+  std::cout << "SAVING degree " << id << ": " << right_value << "\n";
+  return std::move(right_value);
+
 }
 
 // Based on recurrence formula due to DeBoor, Cox, and Mansfield (see NURBS book Eq. (2.9)).

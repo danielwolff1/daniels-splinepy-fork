@@ -187,6 +187,7 @@ template<int parametric_dimensionality>
 typename ParameterSpace<parametric_dimensionality>::Type_
 ParameterSpace<parametric_dimensionality>::EvaluateBasisFunction(
     Index_ const &basis_function_index,
+    Index_ const &basis_function_index_without_offset,
     ParametricCoordinate_ const &parametric_coordinate,
     UniqueEvaluations_& unique_evaluations,
     Tolerance const &tolerance) const {
@@ -217,7 +218,7 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunction(
         basis_function_value *= basis_function(
             parametric_coordinate[current_dimension],
             unique_evaluations[current_dimension],
-            true,
+            basis_function_index_without_offset[dimension].Get(),
             tolerance
         );
       }

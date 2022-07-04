@@ -97,9 +97,14 @@ class BSplineBasisFunction {
   friend bool operator==(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs);
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Tolerance const &tolerance = kEpsilon) const = 0;
+  // tree_info should tell you if requested basis function is 
+  //   - left branch : -2
+  //   - right branch : -1
+  //   - top_node id : 0 or bigger
+  // integer is used to utilize top_node_id directly as saving place.
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            UniqueEvaluations& unique_evaluations,
-                           const bool should_i_compute,
+                           const int tree_info,
                            Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
@@ -107,7 +112,7 @@ class BSplineBasisFunction {
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
                            UniqueDerivatives& unique_derivatives,
-                           const bool should_i_compute,
+                           const bool tree_info,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 
  protected:
@@ -127,6 +132,7 @@ class BSplineBasisFunction {
   Degree degree_;
   ParametricCoordinate start_knot_, end_knot_;
   bool end_knot_equals_last_knot_;
+  bool is_top_level_;
 
  private:
   size_t this_hash_;
