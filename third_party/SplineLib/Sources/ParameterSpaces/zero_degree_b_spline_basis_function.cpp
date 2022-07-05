@@ -60,31 +60,12 @@ ZeroDegreeBSplineBasisFunction::Type_
 ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
-    const int tree_info,
+    int const &tree_info,
     Tolerance const &tolerance) const {
 
-  // Probably this one below is the fastest
-  // -- it is. 
-   return operator()(parametric_coordinate, tolerance);
-  // But, here it is.
-/*
-  // Support check
-  if (!IsInSupport(parametric_coordinate, tolerance)) {
-    std::cout << "  This zero not in support\n";
-    return Type_{};
-  }
-
-  if (tree_info == -1) {
-    unique_evaluations[0] = std::move(Type_{1.0});
-    std:: cout << "\n";
-    return Type_{1.0};
-
-  } else {
-    //return Type_{1.0};
-    std::cout << "zero hit!";
-    return unique_evaluations[0];
-  }
-*/
+  // At each Spline evaluation, this function will be called exactly 4 times
+  // per dim. So, let's just compute. It is also generally faster 
+  return operator()(parametric_coordinate, tolerance);
 }
 
 ZeroDegreeBSplineBasisFunction::Type_
@@ -105,7 +86,9 @@ ZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
     UniqueDerivatives& unique_derivatives,
-    const bool should_i_compute,
+    UniqueEvaluations& unique_evaluations,
+    IsTopLevelComputed& top_level_computed,
+    int const &tree_info,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -117,16 +100,11 @@ ZeroDegreeBSplineBasisFunction::operator()(
   if (derivative == Derivative{}) {
     return operator()(parametric_coordinate,
                       unique_derivatives,
-                      should_i_compute,
+                      tree_info,
                       tolerance);
   } else {
     return Type_{};
   }
-
- // return (derivative == Derivative{} ? operator()(parametric_coordinate,
- //                                                 unique_derivatives[0],
- //                                                 tolerance)
-  //                                   : Type_{});
 }
 
 }  // namespace splinelib::sources::parameter_spaces

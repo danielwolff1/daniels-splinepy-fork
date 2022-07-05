@@ -128,7 +128,7 @@ NonZeroDegreeBSplineBasisFunction::Type_
 NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     UniqueEvaluations& unique_evaluations,
-    const int tree_info,
+    int const &tree_info,
     Tolerance const &tolerance) const {
 
   // First, support check - exit if not
@@ -136,29 +136,32 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     return Type_{};
   }
 
-  // vector entry index depends on curren't basis function's degree
-  //const auto& id = degree_.Get();
-
   int entry_offset{};
+  const auto& id = degree_.Get();
   // evaluation is quite deterministic: it is clear when to lookup
   if (tree_info == -2) {
     // lucky, just take a look.
-    return unique_evaluations[degree_.Get()];
+    // this is valid for all left branches.
+    //return unique_evaluations[degree_.Get()];
+    return unique_evaluations[id];
+
   } else if (tree_info >= 0) {
     // indicates this is top-level nodes
     // check if this has been computed
     const auto& top_level_evaluation =
-        unique_evaluations[degree_.Get() + tree_info];
-    // return
+        //unique_evaluations[degree_.Get() + tree_info];
+        unique_evaluations[id + tree_info];
+    // values are initialized with negative value and if computed,
+    // it should be non-negative.
     if (top_level_evaluation >= 0.0) {
        return top_level_evaluation;
     }
 
     entry_offset = tree_info;
   }
-  // it is your duty to compute
-  // top-level-degree basis functions and all right_lower ones.
-  const auto right_value =
+  // it is your duty to compute.
+  // this means you are either at the top-level node or right branch.
+  const auto computed_basis =
       ((parametric_coordinate - start_knot_).Get()
         * left_denominator_inverse_
         * (*left_lower_degree_basis_function_)(parametric_coordinate,
@@ -171,10 +174,11 @@ NonZeroDegreeBSplineBasisFunction::operator()(
                                                   unique_evaluations,
                                                   -1,
                                                   tolerance));
-  // save for not right ones and top level ones.
-  unique_evaluations[degree_.Get() + entry_offset] = right_value;
 
-  return std::move(right_value);
+  //unique_evaluations[degree_.Get() + entry_offset] = computed_basis;
+  unique_evaluations[id + entry_offset] = computed_basis;
+
+  return std::move(computed_basis);
 
 }
 
@@ -192,9 +196,15 @@ NonZeroDegreeBSplineBasisFunction::operator()(ParametricCoordinate const &parame
   if (derivative != Derivative{}) {
     if (IsInSupport(parametric_coordinate, tolerance)) {
       Derivative const lower_derivative = (derivative - Derivative{1});
-      return ((left_quotient_derivative_ * (*left_lower_degree_basis_function_)(parametric_coordinate, lower_derivative,
-                   tolerance)) - (right_quotient_derivative_ *
-                       (*right_lower_degree_basis_function_)(parametric_coordinate, lower_derivative, tolerance)));
+      return (
+          (left_quotient_derivative_
+           * (*left_lower_degree_basis_function_)(parametric_coordinate,
+                                                  lower_derivative,
+                                                  tolerance))
+          - (right_quotient_derivative_ 
+             * (*right_lower_degree_basis_function_)(parametric_coordinate,
+                                                     lower_derivative,
+                                                     tolerance)));
     } else {
       return Type_{};
     }
@@ -208,7 +218,9 @@ NonZeroDegreeBSplineBasisFunction::operator()(
     ParametricCoordinate const &parametric_coordinate,
     Derivative const &derivative,
     UniqueDerivatives& unique_derivatives,
-    const bool should_i_compute,
+    UniqueEvaluations& unique_evaluations,
+    IsTopLevelComputed& top_level_computed,
+    int const &tree_info,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   try {
@@ -218,55 +230,93 @@ NonZeroDegreeBSplineBasisFunction::operator()(
   }
 #endif
 
-  // First, support check - exit if not
-  if (!IsInSupport(parametric_coordinate, tolerance)) {
-    return Type_{};
+  int entry_offset{}; /* will be zero, unless it is top-level node */
+  if (tree_info == -2) {
+    // nice, just take a look.
+    return unique_derivatives[derivative.Get()];
+  } else if (tree_info >= 0) {
+    // indicates this is top-level nodes.
+    // check if this has been computed
+    //
+    // for derivatives, there are no simple rule that tells us if
+    // it was evaluated.
+    // so, we look at an additional info
+    if (top_level_computed[tree_info]) {
+        // for 0-th derivative, look at evaluations. 
+        if (derivative == Derivative{}) {
+          return unique_evaluations[degree_.Get() + tree_info];
+        }
+        return unique_derivatives[derivative.Get() + tree_info];
+    }
+
+    // save tree_info to place freshly computed value at the right place.
+    entry_offset = tree_info;
+
+    // we are here, because it wasn't computed and in following parts,
+    // it will be computed.
+    // warning: premature action.
+    // an alternative would be checking if entry_offset is >= 0 then set true.
+    top_level_computed[tree_info] = true;
   }
 
-  // vector entry index depends on curren't basis function's degree
-  const auto& id = derivative.Get();
+  // it is your duty to compute
+  // top-level-degree derivatives and all right_lower ones.
+  if (derivative != Derivative{}) {
+      if (!IsInSupport(parametric_coordinate, tolerance)) {
+        // tschuess
+        return Type_{};
+      }
 
-  if (should_i_compute) {
-    if (derivative != Derivative{}) {
-      Derivative const lower_derivative = (derivative - Derivative{1});
-      // same idea as evaluation.
-      // top-level-derivative and all right ones
-      const auto right_one = 
-          (left_quotient_derivative_
-           * (*left_lower_degree_basis_function_)(
-                    parametric_coordinate,
-                    lower_derivative,
-                    unique_derivatives,
-                    false,
-                    tolerance
-             ))
-          - (right_quotient_derivative_
-             * (*right_lower_degree_basis_function_)(
-                     parametric_coordinate,
-                     lower_derivative,
-                     unique_derivatives,
-                     true,
-                     tolerance
-               ));
-      unique_derivatives[id] = right_one;
+    Derivative const lower_derivative = (derivative - Derivative{1});
+    // same idea as evaluation.
+    // top-level-derivative and all right ones
+    const auto computed_basis = 
+        (left_quotient_derivative_
+         * (*left_lower_degree_basis_function_)(
+                  parametric_coordinate,
+                  lower_derivative,
+                  unique_derivatives,
+                  unique_evaluations,
+                  top_level_computed,
+                  -2,
+                  tolerance
+           ))
+        - (right_quotient_derivative_
+           * (*right_lower_degree_basis_function_)(
+                   parametric_coordinate,
+                   lower_derivative,
+                   unique_derivatives,
+                   unique_evaluations,
+                   top_level_computed,
+                   -1,
+                   tolerance
+             ));
 
-      return std::move(right_one);
+      unique_derivatives[derivative.Get() + entry_offset] = computed_basis;
 
-    } else {
-      // zeroth derivative evaluation.
-      // normal evaluation. this will only be done once!
-      UniqueEvaluations unique_evaluations(degree_.Get() + 1);
-      const auto evaluation = operator()(parametric_coordinate,
-                                         unique_evaluations,
-                                         true,
-                                         tolerance);
-      unique_derivatives[id] = evaluation;
+      // here would be a good alternative place to set top-level computed flag.
 
-      return std::move(evaluation);
-    }
+      return std::move(computed_basis);
+
   } else {
-    // direct return!
-    return unique_derivatives[id];
+    // zeroth derivative evaluation. same as normal evaluation.
+    // treat it as normal evaluation <- need top level node info.
+    // could use an additional input if this takes too long.
+    int top_level_id{-1};
+    // compiler told me `bool` will be copied anyways. Hence, no auto&
+    for (const auto computed : top_level_computed) {
+      if(!computed) break;
+      ++top_level_id;
+    }
+
+    const auto evaluation = operator()(parametric_coordinate,
+                                       unique_evaluations,
+                                       top_level_id,
+                                       tolerance);
+
+    unique_derivatives[derivative.Get()] = evaluation;
+
+    return std::move(evaluation);
   }
 }
 

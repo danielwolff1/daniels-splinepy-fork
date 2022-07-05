@@ -79,14 +79,19 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
 
   int i{};
   for (const auto& degree : parameter_space.degrees_) {
-    // This is a way to avoid 
+    // For `left->lookup & right->compute` to work, we should visit each
+    // node only once with depth-first method. If it has been visited already,
+    // we have to look it up.
+    // At the next loop, top-level nodes are visited multiple times. Thus,
+    // this should ensure that revisit is always a lookup.
+    //
     // entry hints:
-    //   0 : zero-th degree evaluations  <- not entered
+    //   0 : zero-th degree evaluations  <- currently not used
     //   1 : first degree evaluation
     //   ...
     //   degree + 0 : top-level evaluation, 0th support
     //   ...
-    //   degree + degree : top-level evaluation, last support 
+    //   degree + degree : top-level evaluation, last support
     unique_evaluations[i] = 
         parameter_spaces::UniqueEvaluations(degree.Get() * 2 + 1, -1.0);
     ++i;
@@ -103,6 +108,8 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
         evaluated_b_spline,
         utilities::std_container_operations::Multiply(
             (*vector_space_)[basis_function.GetIndex1d()],
+            // non_zero_basis_function will provide entry id (tree_info) for
+            // top-level node evaluations.
             parameter_space.EvaluateBasisFunction(basis_function,
                                                   non_zero_basis_function,
                                                   parametric_coordinate,
@@ -129,13 +136,23 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
 
   // prepare map to hold unique evaluation values.
   typename ParameterSpace_::UniqueDerivatives_ unique_derivatives;
+  typename ParameterSpace_::UniqueEvaluations_ unique_evaluations;
+  typename ParameterSpace_::IsTopLevelComputed_ top_level_computed;
 
   int i{};
-  for (const auto& i_derivative : derivative) { 
-    // only need same number as derivatives. however there's `+ 1`
-    // to provide a place for highest dim.
+  for (const auto& i_derivative : derivative) {
+    // similar to evaluation.
+    auto const &current_degree = parameter_space.degrees_[i].Get();
+ 
     unique_derivatives[i] =
-        parameter_spaces::UniqueDerivatives(i_derivative.Get() + 1);
+        parameter_spaces::UniqueDerivatives(i_derivative.Get()
+                                            + current_degree
+                                            + 1);
+    unique_evaluations[i] =
+        parameter_spaces::UniqueEvaluations(current_degree * 2 + 1,
+                                            -1.0);
+    top_level_computed[i] = Vector<bool>(current_degree,
+                                         false);
     ++i;
   }
 
@@ -152,9 +169,13 @@ BSpline<parametric_dimensionality, dimensionality>::operator()(
             ((*vector_space_))[basis_function.GetIndex1d()],
             parameter_space.EvaluateBasisFunctionDerivative(
                 basis_function,
+                non_zero_basis_function,
+                top_level_computed,
                 parametric_coordinate,
                 derivative,
-                unique_derivatives
+                unique_derivatives,
+                unique_evaluations,
+                tolerance
             )
         )
     );

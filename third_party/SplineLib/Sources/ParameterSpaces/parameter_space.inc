@@ -253,9 +253,12 @@ template<int parametric_dimensionality>
 typename ParameterSpace<parametric_dimensionality>::Type_
 ParameterSpace<parametric_dimensionality>::EvaluateBasisFunctionDerivative(
     Index_ const &basis_function_index,
+    Index_ const &basis_function_index_without_offset,
+    IsTopLevelComputed_ &top_level_computed,
     ParametricCoordinate_ const &parametric_coordinate,
     Derivative_ const &derivative,
     UniqueDerivatives_& unique_derivatives,
+    UniqueEvaluations_& unique_evaluations,
     Tolerance const &tolerance) const {
 #ifndef NDEBUG
   Message const kName{"splinelib::sources::parameter_spaces::ParameterSpace::EvaluateBasisFunctionDerivative"};
@@ -279,12 +282,15 @@ ParameterSpace<parametric_dimensionality>::EvaluateBasisFunctionDerivative(
         const auto& basis_function =
             *basis_functions[basis_function_index[dimension].Get()];
 
-        basis_function_derivative_value *=
-            basis_function(parametric_coordinate[current_dimension],
-                           derivative[current_dimension],
-                           unique_derivatives[current_dimension],
-                           true,
-                           tolerance);
+        basis_function_derivative_value *= basis_function(
+            parametric_coordinate[current_dimension],
+            derivative[current_dimension],
+            unique_derivatives[current_dimension],
+            unique_evaluations[current_dimension],
+            top_level_computed[current_dimension],
+            basis_function_index_without_offset[dimension].Get(),
+            tolerance
+        );
       }
   );
   return basis_function_derivative_value;

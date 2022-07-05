@@ -100,6 +100,7 @@ class ParameterSpace {
   // same reason as UniqueBSplineBasisFunctions_
   using UniqueEvaluations_ = UniqueEvaluationsArray<parametric_dimensionality>;
   using UniqueDerivatives_ = UniqueDerivativesArray<parametric_dimensionality>;
+  using IsTopLevelComputed_ = IsTopLevelComputedArray<parametric_dimensionality>;
 
   ParameterSpace() = default;
   ParameterSpace(KnotVectors_ knot_vectors, Degrees_ degrees, Tolerance const &tolerance = kEpsilon);
@@ -141,9 +142,12 @@ class ParameterSpace {
       Tolerance const &tolerance = kEpsilon) const;
   virtual Type_ EvaluateBasisFunctionDerivative(
       Index_ const &basis_function_index,
+      Index_ const &basis_function_index_without_offset,
+      IsTopLevelComputed_& top_level_computed,
       ParametricCoordinate_ const &parametric_coordinate,
       Derivative_ const &derivative,
       UniqueDerivatives_& unique_derivatives,
+      UniqueEvaluations_& unique_evaluations,
       Tolerance const &tolerance = kEpsilon) const;
 
   virtual InsertionInformation_ InsertKnot(Dimension const &dimension, Knot_ knot,

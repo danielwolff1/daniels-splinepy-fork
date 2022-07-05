@@ -59,6 +59,12 @@ template<int parametric_dimensionality>
 using UniqueDerivativesArray =
     Array<UniqueDerivatives, parametric_dimensionality>;
 
+using IsTopLevelComputed = Vector<bool>;
+
+template<int parametric_dimensionality>
+using IsTopLevelComputedArray = Array<IsTopLevelComputed,
+                                      parametric_dimensionality>;
+
 // BSplineBasisFunctions N_{i,p} are non-negative, piecewise polynomial functions of degree p forming a basis of the
 // vector space of all piecewise polynomial functions of degree p corresponding to some knot vector.  The B-spline basis
 // functions have local support only and form a partition of unity.  Actual implementations for evaluating them (as well
@@ -97,14 +103,15 @@ class BSplineBasisFunction {
   friend bool operator==(BSplineBasisFunction const &lhs, BSplineBasisFunction const &rhs);
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Tolerance const &tolerance = kEpsilon) const = 0;
-  // tree_info should tell you if requested basis function is 
-  //   - left branch : -2
-  //   - right branch : -1
-  //   - top_node id : 0 or bigger
-  // integer is used to utilize top_node_id directly as saving place.
+  // tree_info should tell you if requested basis function is ...
+  //   <tree_info value> : <info>
+  //                  -2 : left branch
+  //                  -1 : right branch
+  //         0 or bigger : top_node id. used to determine entry id for
+  //                       top level evaluations
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            UniqueEvaluations& unique_evaluations,
-                           const int tree_info,
+                           int const &tree_info,
                            Tolerance const &tolerance = kEpsilon) const = 0;
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
@@ -112,7 +119,9 @@ class BSplineBasisFunction {
   virtual Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                            Derivative const &derivative,
                            UniqueDerivatives& unique_derivatives,
-                           const bool tree_info,
+                           UniqueEvaluations& unique_evaluations,
+                           IsTopLevelComputed& top_level_computed,
+                           int const &tree_info,
                            Tolerance const &tolerance = kEpsilon) const = 0;
 
  protected:
@@ -132,7 +141,6 @@ class BSplineBasisFunction {
   Degree degree_;
   ParametricCoordinate start_knot_, end_knot_;
   bool end_knot_equals_last_knot_;
-  bool is_top_level_;
 
  private:
   size_t this_hash_;

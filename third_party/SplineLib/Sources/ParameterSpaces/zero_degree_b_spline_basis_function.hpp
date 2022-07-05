@@ -55,7 +55,7 @@ class ZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
                    Tolerance const &tolerance = kEpsilon) const override;
   Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                    UniqueEvaluations& unique_evaluations,
-                   const int tree_info,
+                   int const &tree_info,
                    Tolerance const &tolerance = kEpsilon) const override;
   Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                    Derivative const &derivative,
@@ -63,7 +63,9 @@ class ZeroDegreeBSplineBasisFunction : public virtual BSplineBasisFunction {
   Type_ operator()(ParametricCoordinate const &parametric_coordinate,
                    Derivative const &derivative,
                    UniqueDerivatives& unique_derivatives,
-                   const bool should_i_compute,
+                   UniqueEvaluations& unique_evaluations,
+                   IsTopLevelComputed& top_level_computed,
+                   int const &tree_info,
                    Tolerance const &tolerance = kEpsilon) const override;
 };
 
