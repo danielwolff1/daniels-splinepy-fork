@@ -6,6 +6,7 @@ that shows how to implement a Stokes problem in the form
         -\mu\Delta v + \nabla p = 0
 
 """
+import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -21,6 +22,7 @@ except ImportError:
 # Constants for the remainder of this test case
 N_REFINE = 25
 VISCOSITY = 1e-4
+SHOW_MATRIX = True
 
 # Auxiliary function to map positions into the element
 def map_positions(positions, x_min, x_max, y_min, y_max):
@@ -248,3 +250,7 @@ for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
 # end iterate over all test velocity DOFs
 
 print('done')
+
+if SHOW_MATRIX:
+    plt.spy(system_matrix)
+    plt.show()
