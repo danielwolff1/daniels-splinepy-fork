@@ -71,14 +71,14 @@ pressure_field.insert_knots(1, new_knots)
 
 # Retrieve integration points and weights
 max_order = int(np.max([velocity_field.degrees,pressure_field.degrees]))
-positions, weights = np.polynomial.legendre.leggauss(deg=max_order)
-positions = sp.utils.data.cartesian_product(
-    [positions for _ in range(geometry.para_dim)]
+quad_point_positions, quad_weights = np.polynomial.legendre.leggauss(deg=max_order)
+quad_point_positions = sp.utils.data.cartesian_product(
+    [quad_point_positions for _ in range(geometry.para_dim)]
 )
-weights = sp.utils.data.cartesian_product(
-    [weights for _ in range(geometry.para_dim)]
+quad_weights = sp.utils.data.cartesian_product(
+    [quad_weights for _ in range(geometry.para_dim)]
 )
-weights = np.prod(weights, axis=1)
+quad_weights = np.prod(quad_weights, axis=1)
 
 # Get offsets for organizing the degrees of freedom
 velocity_offset = velocity_field.control_points.size
@@ -106,12 +106,15 @@ print()
 print('Assembling system matrix...', end='', flush=True)
 
 # Element Loop
-for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
-    for j in range(len(ukv[1]) - 1): # iterate over all trial velocity DOFs
+
+# iterate over all elements in first parametric dimension
+for i in range(len(ukv[0]) - 1):
+    # iterate over all elements in second parametric dimension
+    for j in range(len(ukv[1]) - 1):
         
-        # Update position of current element
+        # Map quadrature point positions into the current element
         mapped_positions = map_positions(
-            positions,
+            quad_point_positions,
             ukv[0][i],
             ukv[0][i + 1],
             ukv[1][j],
@@ -125,28 +128,40 @@ for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
         vel_bf_grad, vel_bf_sup = velocity_mapper.basis_gradient_and_support(
             mapped_positions
         )
-        assert np.all(vel_bf_sup[0, :] == vel_bf_sup) # TODO Was macht das?
-        
-        # number of velocity basis functions on current element
-        num_vel_bf = vel_bf_grad.shape[1]
-        # blow up to tensorial shape
-        vel_bf_grad_vec = np.einsum(
-            "qix,qjy,ik,jk->qkxy",
-            vel_bf_grad,
-            vel_bf_grad,
-            np.eye(num_vel_bf),
-            np.eye(num_vel_bf)
+        # Make sure that all supports within the element are equal
+        assert np.all(vel_bf_sup[0, :] == vel_bf_sup)
+        # Retrieve value and support of the pressure basis functions at the 
+        # current position
+        pres_bf, pres_bf_sup = pressure_field.basis_and_support(
+            mapped_positions
         )
+        # Make sure that all supports within the element are equal
+        assert np.all(pres_bf_sup[0, :] == pres_bf_sup) 
+
+        # TODO
+        # Retrieve Hessians in case of PSPG stabilization
+        
+        # # number of velocity basis functions on current element
+        # num_vel_bf = vel_bf_grad.shape[1]
+        # # blow up to tensorial shape
+        # vel_bf_grad_vec = np.einsum(
+        #     "qix,qjy,ik,jk->qkxy",
+        #     vel_bf_grad,
+        #     vel_bf_grad,
+        #     np.eye(num_vel_bf),
+        #     np.eye(num_vel_bf)
+        # )
         
         ##############################
-        # Assemble grad(v) : grad(w) #
+        # Assemble grad(v) : grad(w) #  v_{c,d} w_{c,d} -> Na_{,d} Nb_{,d}
         ##############################
-        # q : quadrature point | i/j: test/trial function | x,y: dim
+        # q: quadrature point | a/b: basis functions on current element | 
+        # d: dimension
         local_matrix = np.einsum(
-            "qixy,qjxy,q,q->ij",
-            vel_bf_grad_vec,
-            vel_bf_grad_vec,
-            weights,
+            "qad,qbd,q,q->ab",
+            vel_bf_grad,
+            vel_bf_grad,
+            quad_weights,
             det_jacs,
             optimize=True,
         )
@@ -159,16 +174,19 @@ for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
         # write into system matrix
         system_matrix[local_to_global[:, 0], local_to_global[:, 1]] \
             += VISCOSITY*local_matrix.flatten()
+        system_matrix[vel_dim_offset+local_to_global[:, 0], 
+                      vel_dim_offset+local_to_global[:, 1]] \
+            += VISCOSITY*local_matrix.flatten()
         
         ################################
-        # Assemble grad(v)^T : grad(w) #
+        # Assemble grad(v)^T : grad(w) #  v_{d,c} w_{c,d} -> Na_{,c} Nb_{,d}
         ################################
-        # q : quadrature point | i/j: test/trial function | x,y: dim
+        # q : quadrature point | a/b: test/trial function | c,d: dim
         local_matrix = np.einsum(
-            "qiyx,qjxy,q,q->ij",
-            vel_bf_grad_vec,
-            vel_bf_grad_vec,
-            weights,
+            "qac,qbd,q,q->abcd",
+            vel_bf_grad,
+            vel_bf_grad,
+            quad_weights,
             det_jacs,
             optimize=True,
         )
@@ -182,7 +200,7 @@ for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
 
         # Update position of current element
         mapped_positions = map_positions(
-            positions,
+            quad_point_positions,
             ukv[0][i],
             ukv[0][i + 1],
             ukp[1][j],
@@ -223,7 +241,7 @@ for i in range(len(ukv[0]) - 1): # iterate over all test velocity DOFs
             "qj,qidd,q,q->ij",
             pres_bf,
             vel_bf_grad_vec,
-            weights,
+            quad_weights,
             det_jacs,
             optimize=True,
         )
